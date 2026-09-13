@@ -1,0 +1,44 @@
+{
+  "$schema": "https://apps.bridgething.com/schemas/catalog/v1.json",
+  "schema": "catalog.v1",
+  "updated_at": "2026-09-13T18:19:28.268Z",
+  "repo": {
+    "name": "Glassy Overlay",
+    "description": "A replacement system overlay for the Spotify Car Thing.",
+    "homepage": "https://github.com/dharmapoudel/bridgething-glass-overlay-source",
+    "icon": null
+  },
+  "apps": [
+    {
+      "id": "01a0984d-3d32-7e4d-b3e3-74de735362cf",
+      "name": "Glassy Overlay",
+      "description": "A glassy system overlay: notifications, calls, pairing, volume and voice, drawn over every app.",
+      "author": "Dharma Poudel",
+      "icon": "https://dharmapoudel.github.io/bridgething-glass-overlay-source/icons/01a0984d-3d32-7e4d-b3e3-74de735362cf.png",
+      "screenshots": [
+        "https://dharmapoudel.github.io/bridgething-glass-overlay-source/screenshots/01a0984d-3d32-7e4d-b3e3-74de735362cf/01-notifications.png",
+        "https://dharmapoudel.github.io/bridgething-glass-overlay-source/screenshots/01a0984d-3d32-7e4d-b3e3-74de735362cf/02-call.png",
+        "https://dharmapoudel.github.io/bridgething-glass-overlay-source/screenshots/01a0984d-3d32-7e4d-b3e3-74de735362cf/03-pairing.png",
+        "https://dharmapoudel.github.io/bridgething-glass-overlay-source/screenshots/01a0984d-3d32-7e4d-b3e3-74de735362cf/04-volume-voice.png"
+      ],
+      "homepage": "https://github.com/dharmapoudel/bridgething-glass-overlay",
+      "source": "https://github.com/dharmapoudel/bridgething-glass-overlay",
+      "versions": [
+        {
+          "version": "0.2.0",
+          "released_at": "2026-09-13T18:19:28.266Z",
+          "download": {
+            "url": "https://dharmapoudel.github.io/bridgething-glass-overlay-source/r/01a0984d-3d32-7e4d-b3e3-74de735362cf/0.2.0.zip",
+            "size": 145246,
+            "sha256": "f6e8e196760d03fbc812f9e09c116c1d4b589880aba0ace1b0caf496170b9354"
+          },
+          "permissions": [],
+          "provides_overlay": true,
+          "min_libbridgething_version": "0.12.10",
+          "changelog": "- Overlay-only bundle: no `index.html`, so the app no longer appears in the\n  Car Thing launcher (requires daemon 0.12.10+, which auto-detects\n  overlay-only bundles). The overlay stays installed and manageable from\n  the companion app.\n- Voice pill now floats above the volume bar instead of covering it.\n- Notification toasts tolerate missing `flags`/`app` fields."
+        }
+      ]
+    }
+  ],
+  "recommended_sources": []
+}
