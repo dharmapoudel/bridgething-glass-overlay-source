@@ -1,7 +1,7 @@
 {
   "$schema": "https://apps.bridgething.com/schemas/catalog/v1.json",
   "schema": "catalog.v1",
-  "updated_at": "2026-09-18T23:54:58.924Z",
+  "updated_at": "2026-09-18T23:57:28.733Z",
   "repo": {
     "name": "Glassy Overlay",
     "description": "A replacement system overlay for the Spotify Car Thing.",
@@ -27,11 +27,11 @@
       "versions": [
         {
           "version": "0.3.20",
-          "released_at": "2026-09-18T23:54:58.899Z",
+          "released_at": "2026-09-18T23:57:28.706Z",
           "download": {
             "url": "https://dharmapoudel.github.io/bridgething-glass-overlay-source/r/01a0984d-3d32-7e4d-b3e3-74de735362cf/0.3.20.zip",
-            "size": 188253,
-            "sha256": "881a481d7b88d85cab10d7c63553fd93169bb945c5200e31df51e4e88efd8b88"
+            "size": 169189,
+            "sha256": "4602be039d56d7a38cdbbc11d384c183a7de4894015dc9c8fbd1dcefaa099c55"
           },
           "permissions": [],
           "provides_overlay": true,
