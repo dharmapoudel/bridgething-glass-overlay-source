@@ -23,9 +23,10 @@ async function flattenTimestamps(dir) {
 }
 
 async function bundleOverlay(app, output) {
+  const dist = join(app.dir, 'dist');
+  await rm(dist, { recursive: true, force: true });
   lib.run('bun', ['run', 'typecheck'], app.dir);
   lib.run('bun', ['run', 'build'], app.dir);
-  const dist = join(app.dir, 'dist');
   const entries = (await readdir(dist).catch(() => [])).filter(e => !e.startsWith('.'));
   if (!entries.length) throw new Error(`apps/${app.slug} built nothing into dist/`);
   const built = await lib.readJson(join(dist, 'manifest.json')).catch(() => {
