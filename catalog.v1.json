@@ -1,7 +1,7 @@
 {
   "$schema": "https://apps.bridgething.com/schemas/catalog/v1.json",
   "schema": "catalog.v1",
-  "updated_at": "2026-09-18T20:52:10.105Z",
+  "updated_at": "2026-09-18T23:54:58.924Z",
   "repo": {
     "name": "Glassy Overlay",
     "description": "A replacement system overlay for the Spotify Car Thing.",
@@ -25,6 +25,19 @@
       "homepage": "https://github.com/dharmapoudel/bridgething-glass-overlay",
       "source": "https://github.com/dharmapoudel/bridgething-glass-overlay",
       "versions": [
+        {
+          "version": "0.3.20",
+          "released_at": "2026-09-18T23:54:58.899Z",
+          "download": {
+            "url": "https://dharmapoudel.github.io/bridgething-glass-overlay-source/r/01a0984d-3d32-7e4d-b3e3-74de735362cf/0.3.20.zip",
+            "size": 188253,
+            "sha256": "881a481d7b88d85cab10d7c63553fd93169bb945c5200e31df51e4e88efd8b88"
+          },
+          "permissions": [],
+          "provides_overlay": true,
+          "min_libbridgething_version": "0.12.10",
+          "changelog": "- The app no longer appears in the device's app list: the on-device\n  settings page moved from `index.html` to `settings.html` and is now\n  declared via the manifest's `settings` field (the supported upstream\n  mechanism), so the daemon no longer treats the bundle as a launchable\n  app. The settings page itself is unchanged and still reachable from\n  the app's settings entry."
+        },
         {
           "version": "0.3.19",
           "released_at": "2026-09-18T20:52:10.073Z",
