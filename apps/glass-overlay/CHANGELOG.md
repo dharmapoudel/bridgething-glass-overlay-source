@@ -1,5 +1,14 @@
 # Glassy Overlay
 
+## 0.3.20
+
+- The app no longer appears in the device's app list: the on-device
+  settings page moved from `index.html` to `settings.html` and is now
+  declared via the manifest's `settings` field (the supported upstream
+  mechanism), so the daemon no longer treats the bundle as a launchable
+  app. The settings page itself is unchanged and still reachable from
+  the app's settings entry.
+
 ## 0.3.19
 
 - Companion-app settings now sync to the overlay in realtime over the
