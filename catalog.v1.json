@@ -1,7 +1,7 @@
 {
   "$schema": "https://apps.bridgething.com/schemas/catalog/v1.json",
   "schema": "catalog.v1",
-  "updated_at": "2026-09-13T18:19:28.268Z",
+  "updated_at": "2026-09-18T20:52:10.105Z",
   "repo": {
     "name": "Glassy Overlay",
     "description": "A replacement system overlay for the Spotify Car Thing.",
@@ -12,18 +12,32 @@
     {
       "id": "01a0984d-3d32-7e4d-b3e3-74de735362cf",
       "name": "Glassy Overlay",
-      "description": "A glassy system overlay: notifications, calls, pairing, volume and voice, drawn over every app.",
+      "description": "A glassy system overlay: notifications, calls, pairing, volume and voice, plus an idle ambient dashboard with clock, weather and now playing, drawn over every app. Includes a launcher settings page for the ambient idle timeout.",
       "author": "Dharma Poudel",
       "icon": "https://dharmapoudel.github.io/bridgething-glass-overlay-source/icons/01a0984d-3d32-7e4d-b3e3-74de735362cf.png",
       "screenshots": [
         "https://dharmapoudel.github.io/bridgething-glass-overlay-source/screenshots/01a0984d-3d32-7e4d-b3e3-74de735362cf/01-notifications.png",
         "https://dharmapoudel.github.io/bridgething-glass-overlay-source/screenshots/01a0984d-3d32-7e4d-b3e3-74de735362cf/02-call.png",
         "https://dharmapoudel.github.io/bridgething-glass-overlay-source/screenshots/01a0984d-3d32-7e4d-b3e3-74de735362cf/03-pairing.png",
-        "https://dharmapoudel.github.io/bridgething-glass-overlay-source/screenshots/01a0984d-3d32-7e4d-b3e3-74de735362cf/04-volume-voice.png"
+        "https://dharmapoudel.github.io/bridgething-glass-overlay-source/screenshots/01a0984d-3d32-7e4d-b3e3-74de735362cf/04-volume-voice.png",
+        "https://dharmapoudel.github.io/bridgething-glass-overlay-source/screenshots/01a0984d-3d32-7e4d-b3e3-74de735362cf/05-ambient.png"
       ],
       "homepage": "https://github.com/dharmapoudel/bridgething-glass-overlay",
       "source": "https://github.com/dharmapoudel/bridgething-glass-overlay",
       "versions": [
+        {
+          "version": "0.3.19",
+          "released_at": "2026-09-18T20:52:10.073Z",
+          "download": {
+            "url": "https://dharmapoudel.github.io/bridgething-glass-overlay-source/r/01a0984d-3d32-7e4d-b3e3-74de735362cf/0.3.19.zip",
+            "size": 169161,
+            "sha256": "8d84cc87ef83d551bb0bc0742580c0ad0feb0dd787016c24b54087f5aa59f888"
+          },
+          "permissions": [],
+          "provides_overlay": true,
+          "min_libbridgething_version": "0.12.10",
+          "changelog": "- Companion-app settings now sync to the overlay in realtime over the\n  daemon (requires Bridgething 0.13.1+): ambient enable, dim level,\n  idle timeout, weather units, and location all apply the moment you\n  change them in the companion app, including while the screensaver is\n  showing. Settings page hints refresh live the same way. Device-side\n  overrides still win over the companion defaults.\n- Settings page changes (idle timeout, dim, location) broadcast to\n  the running overlay on the same tab via storage events.\n- Note: on Bridgething 0.12.x the overlay keeps its old behavior\n  (device-local settings only) — realtime sync activates once the\n  device runs 0.13.1 or newer."
+        },
         {
           "version": "0.2.0",
           "released_at": "2026-09-13T18:19:28.266Z",
