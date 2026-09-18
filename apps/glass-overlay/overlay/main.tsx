@@ -1,13 +1,15 @@
 import type {
   BluetoothPin,
+  BrightnessState,
   Notification,
   PeerSnapshotMap,
   PhoneCall,
+  PlayerState,
   VolumeChanged,
 } from '@bridgething/client';
 import { BridgethingClient } from '@bridgething/client';
 import { render } from 'preact';
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 
 import css from './style.css?inline';
 
@@ -20,7 +22,7 @@ type OverlaySurfaces = {
   voice: boolean;
 };
 
-type OverlayConfig = { origin: string; surfaces: OverlaySurfaces };
+type OverlayConfig = { origin: string; url?: string; surfaces: OverlaySurfaces; ambientIdleMs?: number };
 
 declare global {
   interface Window {
@@ -29,10 +31,79 @@ declare global {
   }
 }
 
+let companionCfg: Record<string, string> = {};
+let companionCfgVersion = 0;
+const companionCfgSubs = new Set<() => void>();
+function bumpCompanionCfg(): void {
+  companionCfgVersion++;
+  for (const f of companionCfgSubs) {
+    try {
+      f();
+    } catch {
+    }
+  }
+}
+function useCompanionCfg(): number {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const f = () => setTick(t => t + 1);
+    companionCfgSubs.add(f);
+    return () => {
+      companionCfgSubs.delete(f);
+    };
+  }, []);
+  return companionCfgVersion;
+}
+async function pullCompanionCfg(client: BridgethingClient): Promise<void> {
+  try {
+    const res = await client.config.list({ timeoutMs: 4000 });
+    if (res.ok) {
+      const next: Record<string, string> = {};
+      for (const e of res.response.entries) {
+        if (typeof e.key === 'string' && typeof e.value === 'string') next[e.key] = e.value;
+      }
+      companionCfg = next;
+      bumpCompanionCfg();
+    }
+  } catch {
+  }
+}
+function syncCompanionCfg(client: BridgethingClient): void {
+  try {
+    client.on(ev => {
+      if (ev.type === 'open') pullCompanionCfg(client).catch(() => {});
+    });
+  } catch {
+  }
+  try {
+    client.config.onChanged(msg => {
+      if (!msg || typeof msg.key !== 'string') return;
+      if (msg.value == null) delete companionCfg[msg.key];
+      else companionCfg[msg.key] = msg.value;
+      bumpCompanionCfg();
+    });
+  } catch {
+  }
+}
+
 const TOAST_TTL_MS = 5_000;
 const MAX_TOASTS = 3;
 const VOLUME_TTL_MS = 1_500;
 const CONNECTION_SHOW_DELAY_MS = 3_000;
+
+function lsGet(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+function lsSet(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+  }
+}
 
 function useLatest<T>(
   subscribe: (emit: (value: T | null) => void) => () => void,
@@ -51,7 +122,6 @@ function useLatest<T>(
       clearTimeout(timer);
       off();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
   return value;
 }
@@ -64,8 +134,6 @@ function timeAgo(tsUnixS: number | null | undefined): string {
   if (m < 60) return `${m}m ago`;
   return `${Math.round(m / 60)}h ago`;
 }
-
-/* ---------------- notifications ---------------- */
 
 function Toasts({ client }: { client: BridgethingClient }) {
   const [live, setLive] = useState<Notification[]>([]);
@@ -116,8 +184,6 @@ function Toasts({ client }: { client: BridgethingClient }) {
     </div>
   );
 }
-
-/* ---------------- call ---------------- */
 
 function CallCard({ client, onDismissible }: { client: BridgethingClient; onDismissible: Dismissible }) {
   const [call, setCall] = useState<PhoneCall | null>(null);
@@ -181,8 +247,6 @@ function CallCard({ client, onDismissible }: { client: BridgethingClient; onDism
   );
 }
 
-/* ---------------- pairing ---------------- */
-
 function PairingModal({ client, onDismissible }: { client: BridgethingClient; onDismissible: Dismissible }) {
   const [pin, setPin] = useState<BluetoothPin | null>(null);
 
@@ -204,8 +268,6 @@ function PairingModal({ client, onDismissible }: { client: BridgethingClient; on
     </div>
   );
 }
-
-/* ---------------- connection ---------------- */
 
 function ConnectionBanner({ client }: { client: BridgethingClient }) {
   const [away, setAway] = useState(false);
@@ -239,8 +301,6 @@ function ConnectionBanner({ client }: { client: BridgethingClient }) {
   );
 }
 
-/* ---------------- volume ---------------- */
-
 function VolumeBar({ client }: { client: BridgethingClient }) {
   const volume = useLatest<VolumeChanged>(emit => client.audio.onVolumeChanged(emit), VOLUME_TTL_MS, [client]);
   if (!volume) return null;
@@ -263,8 +323,6 @@ function VolumeBar({ client }: { client: BridgethingClient }) {
     </div>
   );
 }
-
-/* ---------------- voice ---------------- */
 
 type VoicePhase = 'idle' | 'listening' | 'thinking' | 'done' | 'failed';
 
@@ -308,7 +366,622 @@ function VoicePill({ client }: { client: BridgethingClient }) {
   );
 }
 
-/* ---------------- root ---------------- */
+const AMBIENT_IDLE_MIN_S = 15;
+const AMBIENT_IDLE_MAX_S = 3600;
+const AMBIENT_IDLE_DEFAULT_S = 30;
+
+function clampIdleSecs(s: number): number {
+  return Math.min(AMBIENT_IDLE_MAX_S, Math.max(AMBIENT_IDLE_MIN_S, s));
+}
+
+const AMBIENT_LS_KEY = 'glassy.ambient_idle_s';
+const LS_AMBIENT_ENABLED = 'glassy.ambient_enabled';
+
+function readAmbientEnabled(): boolean {
+  const raw = lsGet(LS_AMBIENT_ENABLED);
+  if (raw === 'true') return true;
+  if (raw === 'false') return false;
+  const injected = companionCfg.ambient_enabled;
+  if (injected === 'true') return true;
+  if (injected === 'false') return false;
+  return true;
+}
+
+function useAmbientEnabled(): boolean {
+  useCompanionCfg();
+  const [enabled, setEnabled] = useState(() => readAmbientEnabled());
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== null && e.key !== LS_AMBIENT_ENABLED) return;
+      setEnabled(readAmbientEnabled());
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+  useEffect(() => {
+    setEnabled(readAmbientEnabled());
+  }, [companionCfgVersion]);
+  return enabled;
+}
+
+function ambientIdleMs(): number {
+  const rawLs = lsGet(AMBIENT_LS_KEY);
+  const secsLs = rawLs == null ? NaN : Number(rawLs);
+  if (Number.isFinite(secsLs)) return clampIdleSecs(secsLs) * 1000;
+  const raw = companionCfg.ambient_idle_s;
+  const secs = raw == null ? NaN : Number(raw);
+  return (Number.isFinite(secs) ? clampIdleSecs(secs) : AMBIENT_IDLE_DEFAULT_S) * 1000;
+}
+
+function useAmbientIdleMs(): number {
+  useCompanionCfg();
+  const [ms, setMs] = useState(() => ambientIdleMs());
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== null && e.key !== AMBIENT_LS_KEY) return;
+      setMs(ambientIdleMs());
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+  useEffect(() => {
+    setMs(ambientIdleMs());
+  }, [companionCfgVersion]);
+  return ms;
+}
+const LS_DIM_LEVEL = 'glassy.ambient_dim_level';
+const DIM_DEFAULT_PCT = 15;
+const DIM_MIN_PCT = 5;
+const DIM_MAX_PCT = 100;
+
+function readDimLevel(): number {
+  const pct = (raw: string | null | undefined): number => {
+    const v = raw == null ? NaN : Number(raw);
+    if (!Number.isFinite(v)) return NaN;
+    return Math.min(DIM_MAX_PCT, Math.max(DIM_MIN_PCT, v)) / 100;
+  };
+  const ls = pct(lsGet(LS_DIM_LEVEL));
+  if (Number.isFinite(ls)) return ls;
+  const injected = pct(companionCfg.ambient_dim_level);
+  if (Number.isFinite(injected)) return injected;
+  return DIM_DEFAULT_PCT / 100;
+}
+const BURNIN_SHIFT_MS = (() => {
+  const v = Number(lsGet('glassy.burnin_shift_ms'));
+  if (Number.isFinite(v) && v >= 1000) return v;
+  return 60_000;
+})();
+const BURNIN_STEPS = [
+  { x: 0, y: 0 },
+  { x: 5, y: 3 },
+  { x: -4, y: 5 },
+  { x: -5, y: -3 },
+  { x: 4, y: -5 },
+];
+const WEATHER_REFRESH_MS = 30 * 60_000;
+const HOME_LAT = 40.15596;
+const HOME_LON = -74.91193;
+
+function useIdle(timeoutMs: number): boolean {
+  const [idle, setIdle] = useState(false);
+  const timeoutRef = useRef(timeoutMs);
+  const armRef = useRef<(ms: number) => void>(() => {});
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const arm = (ms: number) => {
+      setIdle(false);
+      clearTimeout(timer);
+      timer = setTimeout(() => setIdle(true), ms);
+    };
+    armRef.current = arm;
+    const poke = () => arm(timeoutRef.current);
+    const events = [
+      'keydown',
+      'keyup',
+      'pointerdown',
+      'pointermove',
+      'pointerup',
+      'pointercancel',
+      'touchstart',
+      'touchmove',
+      'touchend',
+      'touchcancel',
+      'wheel',
+    ] as const;
+    for (const e of events) document.addEventListener(e, poke, { capture: true, passive: true });
+    poke();
+    return () => {
+      clearTimeout(timer);
+      for (const e of events) document.removeEventListener(e, poke, { capture: true });
+    };
+  }, []);
+  useEffect(() => {
+    if (timeoutMs !== timeoutRef.current) {
+      timeoutRef.current = timeoutMs;
+      armRef.current(timeoutMs);
+    }
+  }, [timeoutMs]);
+  return idle;
+}
+
+function resolveTimeZone(info: {
+  tzIana: string | null;
+  utcOffsetMinutes: number | null;
+  dstOffsetMinutes: number | null;
+}): string | undefined {
+  if (info.tzIana) {
+    try {
+      new Intl.DateTimeFormat('en-US', { timeZone: info.tzIana });
+      return info.tzIana;
+    } catch {
+    }
+  }
+  const offMin = (info.utcOffsetMinutes ?? 0) + (info.dstOffsetMinutes ?? 0);
+  if (offMin % 60 !== 0) return undefined;
+  const hours = offMin / 60;
+  if (hours === 0) return 'Etc/UTC';
+  return `Etc/GMT${hours > 0 ? '-' : '+'}${Math.abs(hours)}`;
+}
+
+function weatherLabel(code: number | null | undefined): string {
+  if (code == null) return '';
+  if (code === 0) return 'Clear';
+  if (code <= 3) return 'Partly cloudy';
+  if (code === 45 || code === 48) return 'Fog';
+  if (code >= 51 && code <= 57) return 'Drizzle';
+  if (code >= 61 && code <= 67) return 'Rain';
+  if (code >= 71 && code <= 77) return 'Snow';
+  if (code >= 80 && code <= 82) return 'Showers';
+  if (code === 85 || code === 86) return 'Snow showers';
+  if (code >= 95) return 'Thunderstorm';
+  return '';
+}
+
+type Units = 'imperial' | 'metric';
+const LS_UNITS = 'glassy.weather_units';
+const LS_LOC = 'glassy.weather_location';
+const LS_LOC_CACHE = 'glassy.weather_location_cache';
+
+function readUnits(): Units {
+  const ls = lsGet(LS_UNITS);
+  if (ls === 'metric' || ls === 'imperial') return ls;
+  return companionCfg.weather_units === 'metric' ? 'metric' : 'imperial';
+}
+
+type LatLon = { lat: number; lon: number };
+
+function parseLatLon(s: string): LatLon | null {
+  const m = s.trim().match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
+  if (!m) return null;
+  const lat = Number(m[1]);
+  const lon = Number(m[2]);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+  if (Math.abs(lat) > 90 || Math.abs(lon) > 180) return null;
+  return { lat, lon };
+}
+
+function decodeBody(body: unknown): string {
+  if (typeof body === 'string') return body;
+  if (body instanceof Uint8Array) return new TextDecoder().decode(body);
+  if (Array.isArray(body)) return new TextDecoder().decode(new Uint8Array(body as number[]));
+  return '';
+}
+
+async function geocode(client: BridgethingClient, q: string): Promise<LatLon | null> {
+  try {
+    const raw = lsGet(LS_LOC_CACHE);
+    if (raw) {
+      const c = JSON.parse(raw) as { q?: unknown; lat?: unknown; lon?: unknown };
+      if (c.q === q && typeof c.lat === 'number' && typeof c.lon === 'number') {
+        return { lat: c.lat, lon: c.lon };
+      }
+    }
+  } catch {
+  }
+  const url =
+    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}` +
+    `&count=1&language=en&format=json`;
+  try {
+    const res = await client.net.fetch(
+      { request: { url, method: 'GET', headers: [], body: null, timeoutMs: 15_000, redirect: 'follow' } },
+      { timeoutMs: 20_000 },
+    );
+    if (!res.ok || res.response.response.status !== 200) return null;
+    const json = JSON.parse(decodeBody(res.response.response.body));
+    const r = json?.results?.[0];
+    if (typeof r?.latitude === 'number' && typeof r?.longitude === 'number') {
+      const ll = { lat: r.latitude, lon: r.longitude };
+      lsSet(LS_LOC_CACHE, JSON.stringify({ q, ...ll }));
+      return ll;
+    }
+  } catch {
+  }
+  return null;
+}
+
+const LS_COORDS_CACHE = 'glassy.weather_coords_cache';
+const COORDS_TTL_MS = 6 * 3600_000;
+
+async function resolveLocation(client: BridgethingClient): Promise<LatLon> {
+  const q = (lsGet(LS_LOC) || companionCfg.weather_location || '').trim();
+  if (!q) {
+    try {
+      const raw = lsGet(LS_COORDS_CACHE);
+      if (raw) {
+        const c = JSON.parse(raw) as { lat?: unknown; lon?: unknown; ts?: unknown };
+        if (
+          typeof c.lat === 'number' &&
+          typeof c.lon === 'number' &&
+          typeof c.ts === 'number' &&
+          Date.now() - c.ts < COORDS_TTL_MS
+        ) {
+          return { lat: c.lat, lon: c.lon };
+        }
+      }
+    } catch {
+    }
+    try {
+      const pos = await client.geo.getOnce({ accuracy: 'coarse', maxAgeS: 900 }, { timeoutMs: 8_000 });
+      if (pos.ok) {
+        const ll = { lat: pos.response.position.lat, lon: pos.response.position.lon };
+        lsSet(LS_COORDS_CACHE, JSON.stringify({ ...ll, ts: Date.now() }));
+        return ll;
+      }
+    } catch {
+    }
+    return { lat: HOME_LAT, lon: HOME_LON };
+  }
+  return parseLatLon(q) ?? (await geocode(client, q)) ?? { lat: HOME_LAT, lon: HOME_LON };
+}
+
+type ForecastDay = { date: string; high: number; low: number; code: number | null };
+type WeatherNow = {
+  temp: number;
+  label: string;
+  humidity: number | null;
+  wind: number | null;
+  units: Units;
+  code: number | null;
+  isDay: boolean | null;
+  days: ForecastDay[];
+};
+
+async function loadWeather(client: BridgethingClient): Promise<WeatherNow | null> {
+  const units = readUnits();
+  const { lat, lon } = await resolveLocation(client);
+  const url =
+    `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+    `&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code,is_day` +
+    `&daily=weather_code,temperature_2m_max,temperature_2m_min` +
+    `&temperature_unit=${units === 'metric' ? 'celsius' : 'fahrenheit'}` +
+    `&wind_speed_unit=${units === 'metric' ? 'kmh' : 'mph'}` +
+    `&timezone=auto&forecast_days=5`;
+  try {
+    const res = await client.net.fetch(
+      { request: { url, method: 'GET', headers: [], body: null, timeoutMs: 15_000, redirect: 'follow' } },
+      { timeoutMs: 20_000 },
+    );
+    if (!res.ok || res.response.response.status !== 200) return null;
+    const json = JSON.parse(decodeBody(res.response.response.body));
+    const temp = json?.current?.temperature_2m;
+    if (typeof temp !== 'number') return null;
+    const code = json?.current?.weather_code;
+    const humidity = json?.current?.relative_humidity_2m;
+    const wind = json?.current?.wind_speed_10m;
+    const times: string[] = Array.isArray(json?.daily?.time) ? json.daily.time : [];
+    const highs: unknown[] = Array.isArray(json?.daily?.temperature_2m_max) ? json.daily.temperature_2m_max : [];
+    const lows: unknown[] = Array.isArray(json?.daily?.temperature_2m_min) ? json.daily.temperature_2m_min : [];
+    const codes: unknown[] = Array.isArray(json?.daily?.weather_code) ? json.daily.weather_code : [];
+    const days: ForecastDay[] = times.slice(0, 5).map((d, i) => ({
+      date: d,
+      high: typeof highs[i] === 'number' ? Math.round(highs[i] as number) : Math.round(temp),
+      low: typeof lows[i] === 'number' ? Math.round(lows[i] as number) : Math.round(temp),
+      code: typeof codes[i] === 'number' ? (codes[i] as number) : null,
+    }));
+    return {
+      temp: Math.round(temp),
+      label: weatherLabel(typeof code === 'number' ? code : null),
+      humidity: typeof humidity === 'number' ? Math.round(humidity) : null,
+      wind: typeof wind === 'number' ? Math.round(wind) : null,
+      units,
+      code: typeof code === 'number' ? code : null,
+      isDay: typeof json?.current?.is_day === 'number' ? json.current.is_day === 1 : null,
+      days,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function weatherCategory(code: number | null | undefined): string {
+  if (code == null) return 'cloud';
+  if (code === 0) return 'sun';
+  if (code <= 3) return 'partly';
+  if (code === 45 || code === 48) return 'fog';
+  if (code >= 95) return 'storm';
+  if ((code >= 71 && code <= 77) || code === 85 || code === 86) return 'snow';
+  return 'rain';
+}
+
+const GLYPH_EMOJI: Record<string, string> = {
+  sun: '☀️',
+  moon: '🌙',
+  partly: '⛅',
+  cloud: '☁️',
+  fog: '🌫️',
+  rain: '🌧️',
+  snow: '🌨️',
+  storm: '⛈️',
+};
+
+function WeatherGlyph({
+  code,
+  size,
+  night,
+}: {
+  code: number | null | undefined;
+  size: number;
+  night?: boolean;
+}) {
+  const cat = weatherCategory(code);
+  const key = night && cat === 'sun' ? 'moon' : cat;
+  return (
+    <span style={{ fontSize: size, lineHeight: 1, opacity: 0.65 }} aria-hidden="true">
+      {GLYPH_EMOJI[key] ?? '☁️'}
+    </span>
+  );
+}
+
+function playingTrack(state: PlayerState): { title: string; artist: string } | null {
+  if (state.playback.state !== 'playing' || !state.track?.title) return null;
+  return { title: state.track.title, artist: state.track.artist ?? '' };
+}
+
+function AmbientScreen({ client }: { client: BridgethingClient }) {
+  useCompanionCfg();
+  const [now, setNow] = useState(() => new Date());
+  const [tz, setTz] = useState<string | undefined>();
+  const [weather, setWeather] = useState<WeatherNow | null>(null);
+  const [weatherSettled, setWeatherSettled] = useState(false);
+  const [weatherEpoch, setWeatherEpoch] = useState(0);
+  const [track, setTrack] = useState<{ title: string; artist: string } | null>(null);
+  const [shift, setShift] = useState(BURNIN_STEPS[0]);
+
+  useEffect(() => {
+    let i = 0;
+    const t = setInterval(() => {
+      i = (i + 1) % BURNIN_STEPS.length;
+      setShift(BURNIN_STEPS[i]);
+    }, BURNIN_SHIFT_MS);
+    return () => clearInterval(t);
+  }, []);
+
+  useEffect(() => {
+    let live = true;
+    client.time
+      .get()
+      .then(res => {
+        if (live && res.ok) setTz(resolveTimeZone(res.response.time));
+      })
+      .catch(() => {});
+    const offTime = client.time.onSnapshot(snap => {
+      if (live) setTz(resolveTimeZone(snap.time));
+    });
+    let minuteTimer: ReturnType<typeof setInterval> | undefined;
+    const align = setTimeout(() => {
+      if (live) setNow(new Date());
+      minuteTimer = setInterval(() => {
+        if (live) setNow(new Date());
+      }, 60_000);
+    }, 60_000 - (Date.now() % 60_000));
+    const refreshTrack = () => {
+      client.player
+        .stateGet()
+        .then(res => {
+          if (live && res.ok) setTrack(playingTrack(res.response.state));
+        })
+        .catch(() => {});
+    };
+    refreshTrack();
+    const offDelta = client.player.onDelta(refreshTrack);
+    return () => {
+      live = false;
+      clearTimeout(align);
+      clearInterval(minuteTimer);
+      offTime();
+      offDelta();
+    };
+  }, [client]);
+
+  useEffect(() => {
+    let live = true;
+    loadWeather(client).then(w => {
+      if (!live) return;
+      setWeather(w);
+      setWeatherSettled(true);
+    });
+    const weatherTimer = setInterval(() => {
+      loadWeather(client).then(w => {
+        if (live && w) setWeather(w);
+      });
+    }, WEATHER_REFRESH_MS);
+    return () => {
+      live = false;
+      clearInterval(weatherTimer);
+    };
+  }, [client, weatherEpoch]);
+
+  useEffect(() => {
+    const effLoc = () => (lsGet(LS_LOC) || companionCfg.weather_location || '').trim();
+    const seen = { loc: effLoc(), units: readUnits() };
+    const check = () => {
+      const loc = effLoc();
+      const units = readUnits();
+      if (loc !== seen.loc || units !== seen.units) {
+        seen.loc = loc;
+        seen.units = units;
+        setWeatherEpoch(e => e + 1);
+      }
+    };
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== null && e.key !== LS_LOC && e.key !== LS_UNITS) return;
+      check();
+    };
+    window.addEventListener('storage', onStorage);
+    companionCfgSubs.add(check);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      companionCfgSubs.delete(check);
+    };
+  }, []);
+
+  useEffect(() => {
+    let saved: BrightnessState | null = null;
+    let cancelled = false;
+    const lastCompanionLevel = { current: readDimLevel() };
+    (async () => {
+      try {
+        const res = await client.hardware.stateGet();
+        if (!res.ok || cancelled) return;
+        saved = res.response.state.brightness;
+        await client.hardware.displaySetMode({ mode: 'manual' });
+        if (cancelled) return;
+        await client.hardware.displaySetLevel({ level: readDimLevel() });
+      } catch {
+      }
+    })();
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== null && e.key !== LS_DIM_LEVEL) return;
+      const level = readDimLevel();
+      lastCompanionLevel.current = level;
+      client.hardware.displaySetLevel({ level }).catch(() => {});
+    };
+    window.addEventListener('storage', onStorage);
+    const onCompanion = () => {
+      const level = readDimLevel();
+      if (level !== lastCompanionLevel.current) {
+        lastCompanionLevel.current = level;
+        client.hardware.displaySetLevel({ level }).catch(() => {});
+      }
+    };
+    companionCfgSubs.add(onCompanion);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('storage', onStorage);
+      companionCfgSubs.delete(onCompanion);
+      const prev = saved;
+      if (prev) {
+        (async () => {
+          try {
+            await client.hardware.displaySetLevel({ level: prev.level });
+            await client.hardware.displaySetMode({ mode: prev.mode });
+          } catch {
+          }
+        })();
+      }
+    };
+  }, [client]);
+
+  const date = new Intl.DateTimeFormat('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    timeZone: tz,
+  }).format(now);
+  const weekdayOf = (iso: string) =>
+    new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: tz })
+      .format(new Date(`${iso}T12:00:00`))
+      .toUpperCase();
+  const meta: string[] = [];
+  if (weather?.humidity != null) meta.push(`Humidity ${weather.humidity}%`);
+  if (weather?.wind != null) meta.push(`Wind ${weather.wind} ${weather.units === 'metric' ? 'km/h' : 'mph'}`);
+
+  if (!weatherSettled) {
+    return <div data-testid="ambient-dashboard" className="pointer-events-none absolute inset-0 bg-black" />;
+  }
+
+  return (
+    <div data-testid="ambient-dashboard" className="pointer-events-none absolute inset-0 bg-black">
+      <div
+        className="flex h-full flex-col justify-between px-10 pt-20 pb-8"
+        style={{ transform: `translate(${shift.x}px, ${shift.y}px)`, transition: 'transform 2.5s ease-in-out' }}
+      >
+        <div className="flex items-center gap-8">
+          <div className="shrink-0">
+            <WeatherGlyph code={weather?.code} size={104} night={weather?.isDay === false} />
+          </div>
+          <div className="min-w-0">
+            {weather ? (
+              <div>
+                <div className="text-[72px] leading-none font-semibold tabular-nums text-white">
+                  {weather.temp}°{weather.units === 'metric' ? 'C' : 'F'}
+                </div>
+                {weather.label ? (
+                  <div className="mt-1 font-mono text-[22px] lowercase text-white/70">{weather.label}</div>
+                ) : null}
+              </div>
+            ) : null}
+            <div className="mt-2 flex flex-col gap-1.5 font-mono text-[13px] font-medium tracking-[0.18em] text-white/50 uppercase">
+              <div>{date.toUpperCase()}</div>
+              {meta.length > 0 ? <div>{meta.join(' / ')}</div> : null}
+              {track ? (
+                <div className="truncate">
+                  ♪ {track.title}
+                  {track.artist ? ` — ${track.artist}` : ''}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+        {weather && weather.days.length > 0 ? (
+          <div>
+            <div className="h-px bg-white/10" />
+            <div className="grid grid-cols-5 gap-3 pt-4">
+              {weather.days.map(d => (
+                <div
+                  key={d.date}
+                  className="forecast-box flex flex-col items-center gap-2 px-2 py-2"
+                >
+                  <div className="font-mono text-[12px] font-medium tracking-[0.14em] text-white/40">
+                    {weekdayOf(d.date)}
+                  </div>
+                  <div>
+                    <WeatherGlyph code={d.code} size={30} />
+                  </div>
+                  <div className="font-mono text-[14px] tabular-nums">
+                    <span className="text-white">{d.high}</span>
+                    <span className="text-white/40"> / </span>
+                    <span className="text-white/50">{d.low}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function Ambient({ client }: { client: BridgethingClient }) {
+  const idleMs = useAmbientIdleMs();
+  const idle = useIdle(idleMs);
+  const enabled = useAmbientEnabled();
+  const [blocked, setBlocked] = useState(false);
+
+  useEffect(() => {
+    const offs = [
+      client.phone.onCallStarted(() => setBlocked(true)),
+      client.phone.onCallEnded(() => setBlocked(false)),
+      client.bluetooth.onPin(() => setBlocked(true)),
+      client.bluetooth.onPairingResult(() => setBlocked(false)),
+    ];
+    return () => offs.forEach(off => off());
+  }, [client]);
+
+  if (!enabled || !idle || blocked) return null;
+  return <AmbientScreen client={client} />;
+}
 
 type Dismissible = (hide: () => void) => () => void;
 
@@ -337,6 +1010,7 @@ function Overlay({ cfg, client }: { cfg: OverlayConfig; client: BridgethingClien
     <>
       <style>{css}</style>
       <div className="absolute inset-0 font-sans">
+        <Ambient client={client} />
         {cfg.surfaces.connection && <ConnectionBanner client={client} />}
         {cfg.surfaces.call && <CallCard client={client} onDismissible={dismissible} />}
         {cfg.surfaces.notifications && <Toasts client={client} />}
@@ -359,7 +1033,9 @@ function boot() {
     host.style.cssText = 'position:fixed;inset:0;z-index:2147483647;pointer-events:none';
     const shadow = host.attachShadow({ mode: 'closed' });
     document.body.appendChild(host);
-    render(<Overlay cfg={cfg} client={new BridgethingClient({ url: `ws://${location.host}/` })} />, shadow);
+    const client = new BridgethingClient({ url: cfg.url ?? `ws://${location.host}/` });
+    if (cfg.url) syncCompanionCfg(client);
+    render(<Overlay cfg={cfg} client={client} />, shadow);
   };
 
   if (document.body) mount();

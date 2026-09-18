@@ -1,9 +1,60 @@
 {
   "id": "01a0984d-3d32-7e4d-b3e3-74de735362cf",
   "name": "Glassy Overlay",
-  "version": "0.2.0",
-  "description": "A glassy system overlay: notifications, calls, pairing, volume and voice, drawn over every app.",
-  "config": [],
+  "version": "0.3.19",
+  "description": "A glassy system overlay: notifications, calls, pairing, volume and voice, plus an idle ambient dashboard with clock, weather and now playing, drawn over every app. Includes a launcher settings page for the ambient idle timeout.",
+  "config": [
+    {
+      "type": "boolean",
+      "data": {
+        "key": "ambient_enabled",
+        "label": "Ambient screensaver",
+        "description": "Show the ambient dashboard (clock, weather, now playing) when the device is idle. Turn off to keep the overlay surfaces without the screensaver.",
+        "default": true
+      }
+    },
+    {
+      "type": "number",
+      "data": {
+        "key": "ambient_dim_level",
+        "label": "Screensaver intensity",
+        "description": "Brightness while the ambient screensaver is showing, in percent. Lower saves more battery. Used as the default in the on-device settings page; a per-device override there wins.",
+        "min": 5,
+        "max": 100,
+        "step": 5,
+        "default": 15
+      }
+    },
+    {
+      "type": "enum",
+      "data": {
+        "key": "ambient_idle_s",
+        "label": "Ambient dashboard idle timeout (seconds)",
+        "description": "Idle time before the ambient dashboard appears. Used as the default in the on-device settings page; a per-device override there wins.",
+        "choices": ["15", "30", "60", "120", "300"],
+        "default": "30"
+      }
+    },
+    {
+      "type": "string",
+      "data": {
+        "key": "weather_location",
+        "label": "Weather location",
+        "description": "City name or \"lat,lon\" for the ambient dashboard weather. Blank uses the phone's location. Used as the default in the on-device settings page; a per-device override there wins.",
+        "default": ""
+      }
+    },
+    {
+      "type": "enum",
+      "data": {
+        "key": "weather_units",
+        "label": "Weather units",
+        "description": "Units for the ambient dashboard weather. Used as the default in the on-device settings page; a per-device override there wins.",
+        "choices": ["imperial", "metric"],
+        "default": "imperial"
+      }
+    }
+  ],
   "permissions": [],
   "art": {
     "heroPx": 248,

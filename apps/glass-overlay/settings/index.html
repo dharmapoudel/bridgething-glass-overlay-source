@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Glassy Overlay settings</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <div>
+      <h1>SETTINGS</h1>
+      <p class="sub">glassy overlay &middot; changes apply instantly</p>
+    </div>
+    <p class="saved" id="saved" aria-live="polite"></p>
+  </header>
+
+  <section class="card">
+    <div class="card-head">
+      <p class="card-label">Ambient screensaver</p>
+      <button class="reset" id="reset-screensaver" type="button">&#8635; reset</button>
+    </div>
+    <button class="switch-row" id="screenswitch" type="button" role="switch" aria-checked="true">
+      <span class="switch-label" id="switchlabel">enabled</span>
+      <span class="switch" aria-hidden="true"><span class="thumb"></span></span>
+    </button>
+    <p class="hint" id="screensaverhint"></p>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <p class="card-label">Screensaver intensity</p>
+      <button class="reset" id="reset-dim" type="button">&#8635; reset</button>
+    </div>
+    <div class="slider-row">
+      <input class="slider" id="dim" type="range" min="5" max="100" step="5">
+      <span class="slider-val" id="dimval">15%</span>
+    </div>
+    <p class="hint">Brightness while the screensaver is showing, in percent. Lower saves more battery.</p>
+    <p class="hint" id="dimhint"></p>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <p class="card-label">Idle timeout</p>
+      <button class="reset" id="reset-idle" type="button">&#8635; reset</button>
+    </div>
+    <div class="tiles" id="idle-tiles"></div>
+    <p class="hint">Idle time before the ambient dashboard appears.</p>
+    <p class="hint" id="idlehint"></p>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <p class="card-label">Weather location</p>
+      <button class="reset" id="reset-location" type="button">&#8635; reset</button>
+    </div>
+    <input class="textinput" id="location" type="text" placeholder="Blank = phone location" autocomplete="off" spellcheck="false">
+    <p class="hint">City name or "lat,lon". Blank uses the phone's location.</p>
+    <p class="hint" id="lochint"></p>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <p class="card-label">Weather units</p>
+      <button class="reset" id="reset-units" type="button">&#8635; reset</button>
+    </div>
+    <div class="segmented" id="units"></div>
+    <p class="hint" id="unitshint"></p>
+  </section>
+
+  <footer>
+    <p>The overlay picks up every change instantly &mdash; no restart needed.</p>
+  </footer>
+</main>
+<script type="module" src="./main.ts"></script>
+</body>
+</html>

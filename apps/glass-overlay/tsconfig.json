@@ -24,6 +24,7 @@
     "useDefineForClassFields": true
   },
   "include": [
-    "overlay"
+    "overlay",
+    "settings"
   ]
 }

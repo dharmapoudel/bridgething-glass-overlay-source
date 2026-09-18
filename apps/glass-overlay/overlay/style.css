@@ -11,6 +11,10 @@
 .pressable { transition: transform 0.12s ease-out; }
 .pressable:active { transform: scale(0.95); }
 
+/* ambient forecast tiles: plain border (Tailwind's `border` sets style via an
+   @property var that stays unset in the shadow root, rendering no border) */
+.forecast-box { border: 1px solid rgb(255 255 255 / 0.12); }
+
 .glass-card {
   background: rgb(10 10 12 / 0.82);
   backdrop-filter: blur(18px) saturate(1.4);

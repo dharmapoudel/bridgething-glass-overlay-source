@@ -4,11 +4,21 @@ A replacement system overlay for the Spotify Car Thing, built for
 [bridgething](https://bridgething.com). It takes over the overlay slot and
 draws a glass-style UI over every app: notification toasts, the call card,
 the Bluetooth pairing PIN, the disconnected-phone banner, the volume bar,
-and the voice status pill.
+and the voice status pill. After thirty seconds without input (configurable
+in the app's settings) it fades in
+an ambient weather dashboard — current conditions, humidity and wind, the
+date, now playing, and a 5-day forecast — and dims the backlight until the
+next touch,
+knob turn, or button press. The dashboard slowly shifts its content by a
+few pixels to prevent screen burn-in. Calls and pairing always take
+precedence over
+the ambient screen.
 
-This is an overlay-only bundle: it ships no launcher page and never appears
-in the Car Thing launcher. It stays installed and manageable from the
-companion app. Requires daemon 0.12.10 or newer.
+This is a hybrid bundle: the overlay draws over every app, and a minimal
+launcher page hosts the ambient settings: idle timeout, weather location
+(blank uses the phone's location), and Imperial/Metric units. It stays
+manageable from
+the companion app. Requires daemon 0.12.10 or newer.
 
 ## Surfaces
 
@@ -25,6 +35,23 @@ companion app. Requires daemon 0.12.10 or newer.
   state, fading out shortly after the last change.
 - **Voice pill** — listening / thinking / done / sorry states with a
   color-coded dot, floating above the volume bar.
+- **Ambient dashboard** — after thirty idle seconds a full-screen weather
+  dashboard fades in: current conditions with humidity and wind, the date,
+  now playing, and a 5-day forecast (Open-Meteo, no API key). The content
+  drifts a few pixels every minute to prevent burn-in, and the backlight
+  dims to 15%. Any input wakes the screen and restores brightness.
+  Suppressed during calls and Bluetooth pairing. Weather location is
+  configurable in the app settings: a city name or "lat,lon", blank uses
+  the phone's location with a home fallback. Units toggle between
+  Imperial (°F, mph) and Metric (°C, km/h). Both can also be set in the
+  companion app's per-app settings; those act as defaults, and a value
+  saved on the device wins.
+
+## Notes
+
+- Weather location: the daemon only grants `geo` to the foreground app,
+  so the overlay tries the phone fix opportunistically and falls back to
+  the `HOME_LAT`/`HOME_LON` constants in `overlay/main.tsx`.
 
 Claim the overlay slot in the companion app under Settings → Home screen
 and overlay → System overlay, then pick **Glassy Overlay**.
