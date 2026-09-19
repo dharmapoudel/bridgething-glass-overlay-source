@@ -1,5 +1,11 @@
 # Glassy Overlay
 
+## 0.3.21
+
+- Reverts 0.3.20: hiding the app from the device app list did not work
+  as intended on-device, so the on-device settings page is back at
+  `index.html` and the app appears in the app list again, as in 0.3.19.
+
 ## 0.3.20
 
 - The app no longer appears in the device's app list: the on-device

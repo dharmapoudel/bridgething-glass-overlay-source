@@ -7,6 +7,5 @@ export default defineConfig({
   build: {
     outDir: resolve(__dirname, 'dist'),
     emptyOutDir: false,
-    rollupOptions: { input: resolve(__dirname, 'settings', 'settings.html') },
   },
 });

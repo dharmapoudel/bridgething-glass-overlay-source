@@ -162,7 +162,7 @@ window.__bridgethingOverlay = ${JSON.stringify(overlayCfg)};
 }
 
 function settingsHostHtml(daemonCfg) {
-  const src = readFileSync(join(SCRATCH, 'dist', 'settings.html'), 'utf8');
+  const src = readFileSync(join(SCRATCH, 'dist', 'index.html'), 'utf8');
   const inject = `<script>${MSGPACK_UMD}</script>\n<script>window.__daemonCfg = ${JSON.stringify(daemonCfg)};${DAEMON_JS}</script>\n<script>${ERROR_HOOK}</script>\n`;
   return src.replace(/<script type="module"/, inject + '<script type="module"');
 }
