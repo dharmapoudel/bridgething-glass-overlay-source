@@ -1,7 +1,7 @@
 {
   "$schema": "https://apps.bridgething.com/schemas/catalog/v1.json",
   "schema": "catalog.v1",
-  "updated_at": "2026-09-18T23:57:28.733Z",
+  "updated_at": "2026-09-19T01:03:58.705Z",
   "repo": {
     "name": "Glassy Overlay",
     "description": "A replacement system overlay for the Spotify Car Thing.",
@@ -25,6 +25,19 @@
       "homepage": "https://github.com/dharmapoudel/bridgething-glass-overlay",
       "source": "https://github.com/dharmapoudel/bridgething-glass-overlay",
       "versions": [
+        {
+          "version": "0.3.21",
+          "released_at": "2026-09-19T01:03:58.624Z",
+          "download": {
+            "url": "https://dharmapoudel.github.io/bridgething-glass-overlay-source/r/01a0984d-3d32-7e4d-b3e3-74de735362cf/0.3.21.zip",
+            "size": 169161,
+            "sha256": "60986ea33aaba3e3f7e880b7a432c17c199abe107962b91ed8226a94fc781d3f"
+          },
+          "permissions": [],
+          "provides_overlay": true,
+          "min_libbridgething_version": "0.12.10",
+          "changelog": "- Reverts 0.3.20: hiding the app from the device app list did not work\n  as intended on-device, so the on-device settings page is back at\n  `index.html` and the app appears in the app list again, as in 0.3.19."
+        },
         {
           "version": "0.3.20",
           "released_at": "2026-09-18T23:57:28.706Z",
