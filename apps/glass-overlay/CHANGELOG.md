@@ -1,5 +1,10 @@
 # Glassy Overlay
 
+## 0.3.22
+
+- The ambient dashboard's now-playing line is trimmed to 20 characters
+  plus an ellipsis, so long track titles no longer stretch the layout.
+
 ## 0.3.21
 
 - Reverts 0.3.20: hiding the app from the device app list did not work

@@ -737,6 +737,15 @@ function playingTrack(state: PlayerState): { title: string; artist: string } | n
   return { title: state.track.title, artist: state.track.artist ?? '' };
 }
 
+// now-playing ticker: hard-trim the track text so long titles never push the
+// ambient dashboard layout around; the CSS `truncate` stays as a fallback.
+const NOW_PLAYING_MAX_CHARS = 20;
+
+function truncateNowPlaying(text: string): string {
+  const chars = [...text];
+  return chars.length > NOW_PLAYING_MAX_CHARS ? chars.slice(0, NOW_PLAYING_MAX_CHARS).join('') + '\u2026' : text;
+}
+
 function AmbientScreen({ client }: { client: BridgethingClient }) {
   useCompanionCfg();
   const [now, setNow] = useState(() => new Date());
@@ -926,8 +935,7 @@ function AmbientScreen({ client }: { client: BridgethingClient }) {
               {meta.length > 0 ? <div>{meta.join(' / ')}</div> : null}
               {track ? (
                 <div className="truncate">
-                  ♪ {track.title}
-                  {track.artist ? ` — ${track.artist}` : ''}
+                  ♪ {truncateNowPlaying(`${track.title}${track.artist ? ` — ${track.artist}` : ''}`)}
                 </div>
               ) : null}
             </div>
