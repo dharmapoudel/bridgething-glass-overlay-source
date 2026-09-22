@@ -1,5 +1,9 @@
 # Glassy Overlay
 
+## 0.3.24
+
+- Portrait detection now uses screen.orientation (same as Radio Atlas and Calendar): the daemon pins the layout viewport at 800x480 and rotates the panel, so the old viewport-size check never activated the portrait layout on-device. The stacked portrait dashboard (glyph on top, temperature and lines below, forecast raised clear of the knob) now actually appears in portrait. Landscape layout is unchanged.
+
 ## 0.3.23
 
 - Portrait layout for the ambient dashboard: the weather glyph now sits on top with the temperature and detail lines stacked and centered below it, and the forecast row is raised higher so the knob no longer blocks its view. Landscape layout is unchanged.

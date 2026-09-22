@@ -746,14 +746,37 @@ function truncateNowPlaying(text: string): string {
   return chars.length > NOW_PLAYING_MAX_CHARS ? chars.slice(0, NOW_PLAYING_MAX_CHARS).join('') + '\u2026' : text;
 }
 
-// portrait (480x800) vs landscape (800x480): the ambient dashboard renders a
-// compact portrait variant; every other surface already adapts.
+// Portrait detection (same as Radio Atlas / Calendar): the daemon pins the
+// layout viewport at 800x480 and rotates the panel, so a viewport-size check
+// never fires on-device. screen.orientation reports portrait-secondary at 270deg.
+function detectPortrait(): boolean {
+  try {
+    if (screen.orientation?.type.startsWith('portrait')) return true;
+  } catch { /* older webview */ }
+  try {
+    if (window.matchMedia('(orientation: portrait)').matches) return true;
+  } catch { /* no matchMedia */ }
+  return false;
+}
+
 function useIsPortrait(): boolean {
-  const [portrait, setPortrait] = useState(() => window.innerHeight > window.innerWidth);
+  const [portrait, setPortrait] = useState(detectPortrait);
   useEffect(() => {
-    const onResize = () => setPortrait(window.innerHeight > window.innerWidth);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
+    const update = () => setPortrait(detectPortrait());
+    let orientation: ScreenOrientation | null = null;
+    let mq: MediaQueryList | null = null;
+    try {
+      orientation = screen.orientation;
+      orientation.addEventListener('change', update);
+      mq = window.matchMedia('(orientation: portrait)');
+      mq.addEventListener('change', update);
+    } catch { /* listeners unavailable */ }
+    return () => {
+      try {
+        orientation?.removeEventListener('change', update);
+        mq?.removeEventListener('change', update);
+      } catch { /* ignore */ }
+    };
   }, []);
   return portrait;
 }
