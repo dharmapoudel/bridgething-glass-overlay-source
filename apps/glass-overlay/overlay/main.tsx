@@ -746,6 +746,18 @@ function truncateNowPlaying(text: string): string {
   return chars.length > NOW_PLAYING_MAX_CHARS ? chars.slice(0, NOW_PLAYING_MAX_CHARS).join('') + '\u2026' : text;
 }
 
+// portrait (480x800) vs landscape (800x480): the ambient dashboard renders a
+// compact portrait variant; every other surface already adapts.
+function useIsPortrait(): boolean {
+  const [portrait, setPortrait] = useState(() => window.innerHeight > window.innerWidth);
+  useEffect(() => {
+    const onResize = () => setPortrait(window.innerHeight > window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  return portrait;
+}
+
 function AmbientScreen({ client }: { client: BridgethingClient }) {
   useCompanionCfg();
   const [now, setNow] = useState(() => new Date());
@@ -755,6 +767,7 @@ function AmbientScreen({ client }: { client: BridgethingClient }) {
   const [weatherEpoch, setWeatherEpoch] = useState(0);
   const [track, setTrack] = useState<{ title: string; artist: string } | null>(null);
   const [shift, setShift] = useState(BURNIN_STEPS[0]);
+  const portrait = useIsPortrait();
 
   useEffect(() => {
     let i = 0;
@@ -912,25 +925,35 @@ function AmbientScreen({ client }: { client: BridgethingClient }) {
   return (
     <div data-testid="ambient-dashboard" className="pointer-events-none absolute inset-0 bg-black">
       <div
-        className="flex h-full flex-col justify-between px-10 pt-20 pb-8"
+        className={
+          portrait ? 'flex h-full flex-col px-6 pt-12 pb-28' : 'flex h-full flex-col justify-between px-10 pt-20 pb-8'
+        }
         style={{ transform: `translate(${shift.x}px, ${shift.y}px)`, transition: 'transform 2.5s ease-in-out' }}
       >
-        <div className="flex items-center gap-8">
+        <div className={portrait ? 'flex flex-1 flex-col items-center justify-center gap-5 text-center' : 'flex items-center gap-8'}>
           <div className="shrink-0">
-            <WeatherGlyph code={weather?.code} size={104} night={weather?.isDay === false} />
+            <WeatherGlyph code={weather?.code} size={portrait ? 96 : 104} night={weather?.isDay === false} />
           </div>
-          <div className="min-w-0">
+          <div className={portrait ? 'w-full min-w-0' : 'min-w-0'}>
             {weather ? (
               <div>
-                <div className="text-[72px] leading-none font-semibold tabular-nums text-white">
+                <div className={
+                    portrait
+                      ? 'text-[64px] leading-none font-semibold tabular-nums text-white'
+                      : 'text-[72px] leading-none font-semibold tabular-nums text-white'
+                  }>
                   {weather.temp}°{weather.units === 'metric' ? 'C' : 'F'}
                 </div>
                 {weather.label ? (
-                  <div className="mt-1 font-mono text-[22px] lowercase text-white/70">{weather.label}</div>
+                  <div className={
+                      portrait
+                        ? 'mt-1 font-mono text-[20px] lowercase text-white/70'
+                        : 'mt-1 font-mono text-[22px] lowercase text-white/70'
+                    }>{weather.label}</div>
                 ) : null}
               </div>
             ) : null}
-            <div className="mt-2 flex flex-col gap-1.5 font-mono text-[13px] font-medium tracking-[0.18em] text-white/50 uppercase">
+            <div className={portrait ? 'mt-2 flex flex-col items-center gap-1.5 font-mono text-[13px] font-medium tracking-[0.18em] text-white/50 uppercase' : 'mt-2 flex flex-col gap-1.5 font-mono text-[13px] font-medium tracking-[0.18em] text-white/50 uppercase'}>
               <div>{date.toUpperCase()}</div>
               {meta.length > 0 ? <div>{meta.join(' / ')}</div> : null}
               {track ? (
@@ -944,19 +967,23 @@ function AmbientScreen({ client }: { client: BridgethingClient }) {
         {weather && weather.days.length > 0 ? (
           <div>
             <div className="h-px bg-white/10" />
-            <div className="grid grid-cols-5 gap-3 pt-4">
+            <div className={portrait ? 'grid grid-cols-5 gap-2 pt-4' : 'grid grid-cols-5 gap-3 pt-4'}>
               {weather.days.map(d => (
                 <div
                   key={d.date}
-                  className="forecast-box flex flex-col items-center gap-2 px-2 py-2"
+                  className={
+                    portrait
+                      ? 'forecast-box flex flex-col items-center gap-2 px-1 py-2'
+                      : 'forecast-box flex flex-col items-center gap-2 px-2 py-2'
+                  }
                 >
                   <div className="font-mono text-[12px] font-medium tracking-[0.14em] text-white/40">
                     {weekdayOf(d.date)}
                   </div>
                   <div>
-                    <WeatherGlyph code={d.code} size={30} />
+                    <WeatherGlyph code={d.code} size={portrait ? 28 : 30} />
                   </div>
-                  <div className="font-mono text-[14px] tabular-nums">
+                  <div className={portrait ? 'font-mono text-[13px] tabular-nums' : 'font-mono text-[14px] tabular-nums'}>
                     <span className="text-white">{d.high}</span>
                     <span className="text-white/40"> / </span>
                     <span className="text-white/50">{d.low}</span>

@@ -1,5 +1,9 @@
 # Glassy Overlay
 
+## 0.3.23
+
+- Portrait layout for the ambient dashboard: the weather glyph now sits on top with the temperature and detail lines stacked and centered below it, and the forecast row is raised higher so the knob no longer blocks its view. Landscape layout is unchanged.
+
 ## 0.3.22
 
 - The ambient dashboard's now-playing line is trimmed to 20 characters
