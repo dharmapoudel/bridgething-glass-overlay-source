@@ -1,5 +1,10 @@
 # Glassy Overlay
 
+## 0.3.25
+
+- Settings page: the SETTINGS title now has 24px left padding so it aligns with the card titles below (they sit inside the cards' 24px padding). No change to the ambient dashboard.
+
+
 ## 0.3.24
 
 - Portrait detection now uses screen.orientation (same as Radio Atlas and Calendar): the daemon pins the layout viewport at 800x480 and rotates the panel, so the old viewport-size check never activated the portrait layout on-device. The stacked portrait dashboard (glyph on top, temperature and lines below, forecast raised clear of the knob) now actually appears in portrait. Landscape layout is unchanged.
