@@ -43,11 +43,25 @@ const IDLE_OPTS: Array<[number, string]> = [
 ];
 const LS_IDLE_SRC = 'glassy.ambient_idle_s_src';
 
+const LS_REFRESH = 'glassy.weather_refresh_s';
+const LS_REFRESH_SRC = 'glassy.weather_refresh_s_src';
+const REFRESH_DEFAULT_S = 1800;
+const REFRESH_MIN_S = 300;
+const REFRESH_MAX_S = 7200;
+const REFRESH_OPTS: Array<[number, string]> = [
+  [300, '5m'],
+  [900, '15m'],
+  [1800, '30m'],
+  [3600, '1hr'],
+  [7200, '2hr'],
+];
+
 let companionLocation: string | null = null;
 let companionUnits: 'imperial' | 'metric' | null = null;
 let companionEnabled: boolean | null = null;
 let companionDim: number | null = null;
 let companionIdle: number | null = null;
+let companionRefresh: number | null = null;
 
 function readSecs(): number {
   const raw = lsGet(LS_KEY);
@@ -112,12 +126,71 @@ renderIdleTiles();
   flashSaved('Reset');
 });
 
+function clampRefreshSecs(s: number): number {
+  if (!Number.isFinite(s)) return REFRESH_DEFAULT_S;
+  return Math.min(REFRESH_MAX_S, Math.max(REFRESH_MIN_S, Math.round(s)));
+}
+function readRefreshSecs(): number {
+  const raw = lsGet(LS_REFRESH);
+  const s = raw == null ? NaN : Number(raw);
+  if (Number.isFinite(s)) return clampRefreshSecs(s);
+  return companionRefresh ?? REFRESH_DEFAULT_S;
+}
+
+const refreshTiles = document.getElementById('refresh-tiles') as HTMLDivElement;
+const refreshHint = document.getElementById('refreshhint') as HTMLParagraphElement;
+
+function refreshLabel(s: number): string {
+  return s < 3600 ? `${s / 60}m` : `${s / 3600}hr`;
+}
+
+function refreshRefreshHint(): void {
+  if (companionRefresh !== null) {
+    refreshHint.textContent =
+      lsGet(LS_REFRESH_SRC) === 'device'
+        ? `Companion default is ${refreshLabel(companionRefresh)}; this device overrides it.`
+        : `Using the companion app default (${refreshLabel(companionRefresh)}).`;
+  } else {
+    refreshHint.textContent = '';
+  }
+}
+
+function renderRefreshTiles(): void {
+  const cur = readRefreshSecs();
+  refreshTiles.textContent = '';
+  for (const [secs, label] of REFRESH_OPTS) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'tile' + (secs === cur ? ' active' : '');
+    b.textContent = label;
+    b.addEventListener('click', () => {
+      lsSet(LS_REFRESH, String(secs));
+      lsSet(LS_REFRESH_SRC, 'device');
+      renderRefreshTiles();
+      refreshRefreshHint();
+      flashSaved('Saved');
+    });
+    refreshTiles.appendChild(b);
+  }
+}
+renderRefreshTiles();
+refreshRefreshHint();
+
+(document.getElementById('reset-refresh') as HTMLButtonElement).addEventListener('click', () => {
+  lsDel(LS_REFRESH);
+  lsDel(LS_REFRESH_SRC);
+  renderRefreshTiles();
+  refreshRefreshHint();
+  flashSaved('Reset');
+});
+
 export type CompanionDefaults = {
   location: string | null;
   units: 'imperial' | 'metric' | null;
   enabled: boolean | null;
   dimLevel: number | null;
   idleTimeout: number | null;
+  refresh: number | null;
 };
 
 declare global {
@@ -140,7 +213,7 @@ export async function fetchCompanionDefaults(wsUrl: string): Promise<CompanionDe
 }
 
 async function readCompanionEntries(client: BridgethingClient): Promise<CompanionDefaults> {
-  const out: CompanionDefaults = { location: null, units: null, enabled: null, dimLevel: null, idleTimeout: null };
+  const out: CompanionDefaults = { location: null, units: null, enabled: null, dimLevel: null, idleTimeout: null, refresh: null };
   try {
     const get = async (key: string): Promise<string | null> => {
       try {
@@ -150,12 +223,13 @@ async function readCompanionEntries(client: BridgethingClient): Promise<Companio
         return null;
       }
     };
-    const [loc, units, enabled, dim, idle] = await Promise.all([
+    const [loc, units, enabled, dim, idle, refresh] = await Promise.all([
       get('weather_location'),
       get('weather_units'),
       get('ambient_enabled'),
       get('ambient_dim_level'),
       get('ambient_idle_s'),
+      get('weather_refresh_s'),
     ]);
     if (loc) out.location = loc;
     if (units === 'imperial' || units === 'metric') out.units = units;
@@ -165,6 +239,8 @@ async function readCompanionEntries(client: BridgethingClient): Promise<Companio
     if (Number.isFinite(dimNum)) out.dimLevel = Math.min(100, Math.max(5, dimNum));
     const idleNum = idle == null ? NaN : Number(idle);
     if (Number.isFinite(idleNum)) out.idleTimeout = Math.min(MAX_S, Math.max(MIN_S, idleNum));
+    const refreshNum = refresh == null ? NaN : Number(refresh);
+    if (Number.isFinite(refreshNum)) out.refresh = Math.min(REFRESH_MAX_S, Math.max(REFRESH_MIN_S, Math.round(refreshNum)));
   } catch {
   }
   return out;
@@ -200,6 +276,7 @@ export function applyCompanionDefaults(d: CompanionDefaults): void {
   companionEnabled = d.enabled;
   companionDim = d.dimLevel;
   companionIdle = d.idleTimeout;
+  companionRefresh = d.refresh;
   if (companionLocation && lsGet(LS_LOC_SRC) !== 'device') {
     lsSet(LS_LOC, companionLocation);
     lsSet(LS_LOC_SRC, 'companion');
@@ -221,6 +298,10 @@ export function applyCompanionDefaults(d: CompanionDefaults): void {
     lsSet(LS_KEY, String(companionIdle));
     lsSet(LS_IDLE_SRC, 'companion');
   }
+  if (companionRefresh !== null && lsGet(LS_REFRESH_SRC) !== 'device') {
+    lsSet(LS_REFRESH, String(companionRefresh));
+    lsSet(LS_REFRESH_SRC, 'companion');
+  }
   if (!locTouched) locInput.value = lsGet(LS_LOC) || '';
   refreshLocHint();
   renderUnits();
@@ -229,6 +310,8 @@ export function applyCompanionDefaults(d: CompanionDefaults): void {
   refreshScreensaverHint();
   renderIdleTiles();
   refreshIdleHint();
+  renderRefreshTiles();
+  refreshRefreshHint();
   dimInput.value = String(readDim());
   dimVal.textContent = `${readDim()}%`;
   refreshDimHint();

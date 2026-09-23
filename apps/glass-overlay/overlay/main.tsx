@@ -458,9 +458,41 @@ const BURNIN_STEPS = [
   { x: -5, y: -3 },
   { x: 4, y: -5 },
 ];
-const WEATHER_REFRESH_MS = 30 * 60_000;
-const HOME_LAT = 40.15596;
-const HOME_LON = -74.91193;
+const LS_WEATHER_REFRESH_S = 'glassy.weather_refresh_s';
+const WEATHER_REFRESH_DEFAULT_S = 1800;
+const WEATHER_REFRESH_MIN_S = 300;
+const WEATHER_REFRESH_MAX_S = 7200;
+
+function clampRefreshSecs(secs: number): number {
+  if (!Number.isFinite(secs)) return WEATHER_REFRESH_DEFAULT_S;
+  return Math.min(WEATHER_REFRESH_MAX_S, Math.max(WEATHER_REFRESH_MIN_S, Math.round(secs)));
+}
+
+function weatherRefreshMs(): number {
+  const rawLs = lsGet(LS_WEATHER_REFRESH_S);
+  const secsLs = rawLs == null ? NaN : Number(rawLs);
+  if (Number.isFinite(secsLs)) return clampRefreshSecs(secsLs) * 1000;
+  const raw = companionCfg.weather_refresh_s;
+  const secs = raw == null ? NaN : Number(raw);
+  return clampRefreshSecs(secs) * 1000;
+}
+
+function useWeatherRefreshMs(): number {
+  useCompanionCfg();
+  const [ms, setMs] = useState(() => weatherRefreshMs());
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== null && e.key !== LS_WEATHER_REFRESH_S) return;
+      setMs(weatherRefreshMs());
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+  useEffect(() => {
+    setMs(weatherRefreshMs());
+  }, [companionCfgVersion]);
+  return ms;
+}
 
 function useIdle(timeoutMs: number): boolean {
   const [idle, setIdle] = useState(false);
@@ -602,7 +634,7 @@ async function geocode(client: BridgethingClient, q: string): Promise<LatLon | n
 const LS_COORDS_CACHE = 'glassy.weather_coords_cache';
 const COORDS_TTL_MS = 6 * 3600_000;
 
-async function resolveLocation(client: BridgethingClient): Promise<LatLon> {
+async function resolveLocation(client: BridgethingClient): Promise<LatLon | null> {
   const q = (lsGet(LS_LOC) || companionCfg.weather_location || '').trim();
   if (!q) {
     try {
@@ -629,9 +661,9 @@ async function resolveLocation(client: BridgethingClient): Promise<LatLon> {
       }
     } catch {
     }
-    return { lat: HOME_LAT, lon: HOME_LON };
+    return null;
   }
-  return parseLatLon(q) ?? (await geocode(client, q)) ?? { lat: HOME_LAT, lon: HOME_LON };
+  return parseLatLon(q) ?? (await geocode(client, q));
 }
 
 type ForecastDay = { date: string; high: number; low: number; code: number | null };
@@ -648,7 +680,9 @@ type WeatherNow = {
 
 async function loadWeather(client: BridgethingClient): Promise<WeatherNow | null> {
   const units = readUnits();
-  const { lat, lon } = await resolveLocation(client);
+  const ll = await resolveLocation(client);
+  if (!ll) return null;
+  const { lat, lon } = ll;
   const url =
     `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
     `&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code,is_day` +
@@ -791,6 +825,7 @@ function AmbientScreen({ client }: { client: BridgethingClient }) {
   const [track, setTrack] = useState<{ title: string; artist: string } | null>(null);
   const [shift, setShift] = useState(BURNIN_STEPS[0]);
   const portrait = useIsPortrait();
+  const weatherIntervalMs = useWeatherRefreshMs();
 
   useEffect(() => {
     let i = 0;
@@ -849,12 +884,12 @@ function AmbientScreen({ client }: { client: BridgethingClient }) {
       loadWeather(client).then(w => {
         if (live && w) setWeather(w);
       });
-    }, WEATHER_REFRESH_MS);
+    }, weatherIntervalMs);
     return () => {
       live = false;
       clearInterval(weatherTimer);
     };
-  }, [client, weatherEpoch]);
+  }, [client, weatherEpoch, weatherIntervalMs]);
 
   useEffect(() => {
     const effLoc = () => (lsGet(LS_LOC) || companionCfg.weather_location || '').trim();
@@ -949,7 +984,7 @@ function AmbientScreen({ client }: { client: BridgethingClient }) {
     <div data-testid="ambient-dashboard" className="pointer-events-none absolute inset-0 bg-black">
       <div
         className={
-          portrait ? 'flex h-full flex-col px-6 pt-12 pb-28' : 'flex h-full flex-col justify-between px-10 pt-20 pb-8'
+          portrait ? 'flex h-full flex-col px-8 pt-12 pb-28' : 'flex h-full flex-col justify-between px-10 pt-20 pb-8'
         }
         style={{ transform: `translate(${shift.x}px, ${shift.y}px)`, transition: 'transform 2.5s ease-in-out' }}
       >

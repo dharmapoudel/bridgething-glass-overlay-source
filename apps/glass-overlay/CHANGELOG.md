@@ -1,5 +1,19 @@
 # Glassy Overlay
 
+## 0.3.26
+
+- The weather location is no longer hardcoded: the overlay used to fall back
+  to a baked-in home coordinate when no location was set and the phone's
+  location was unavailable. It now uses the configured location (on-device
+  settings or companion app), the phone's location, or shows no weather.
+- New "Weather refresh" setting, in the on-device settings page and the
+  companion app: 5m / 15m / 30m / 1hr / 2hr tiles, same pattern as Idle
+  timeout (default 30m). The ambient dashboard re-arms its weather timer
+  whenever the setting changes.
+- Portrait ambient dashboard: slightly more left/right padding (24px to
+  32px). Landscape layout is unchanged.
+
+
 ## 0.3.25
 
 - Settings page: the SETTINGS title now has 24px left padding so it aligns with the card titles below (they sit inside the cards' 24px padding). No change to the ambient dashboard.
