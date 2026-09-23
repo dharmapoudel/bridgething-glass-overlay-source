@@ -1,7 +1,7 @@
 {
   "$schema": "https://apps.bridgething.com/schemas/catalog/v1.json",
   "schema": "catalog.v1",
-  "updated_at": "2026-09-19T01:03:58.705Z",
+  "updated_at": "2026-09-23T21:06:46.335Z",
   "repo": {
     "name": "Glassy Overlay",
     "description": "A replacement system overlay for the Spotify Car Thing.",
@@ -25,6 +25,19 @@
       "homepage": "https://github.com/dharmapoudel/bridgething-glass-overlay",
       "source": "https://github.com/dharmapoudel/bridgething-glass-overlay",
       "versions": [
+        {
+          "version": "0.3.25",
+          "released_at": "2026-09-23T21:06:46.259Z",
+          "download": {
+            "url": "https://dharmapoudel.github.io/bridgething-glass-overlay-source/r/01a0984d-3d32-7e4d-b3e3-74de735362cf/0.3.25.zip",
+            "size": 169520,
+            "sha256": "4665ad2232c643d0a4a60fabc9eab33e9fc86b82bd77467697edd6a941d82bad"
+          },
+          "permissions": [],
+          "provides_overlay": true,
+          "min_libbridgething_version": "0.12.10",
+          "changelog": "- Settings page: the SETTINGS title now has 24px left padding so it aligns with the card titles below (they sit inside the cards' 24px padding). No change to the ambient dashboard."
+        },
         {
           "version": "0.3.21",
           "released_at": "2026-09-19T01:03:58.624Z",
