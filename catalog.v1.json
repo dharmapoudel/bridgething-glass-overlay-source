@@ -1,7 +1,7 @@
 {
   "$schema": "https://apps.bridgething.com/schemas/catalog/v1.json",
   "schema": "catalog.v1",
-  "updated_at": "2026-09-23T21:06:46.335Z",
+  "updated_at": "2026-09-24T00:38:37.217Z",
   "repo": {
     "name": "Glassy Overlay",
     "description": "A replacement system overlay for the Spotify Car Thing.",
@@ -25,6 +25,19 @@
       "homepage": "https://github.com/dharmapoudel/bridgething-glass-overlay",
       "source": "https://github.com/dharmapoudel/bridgething-glass-overlay",
       "versions": [
+        {
+          "version": "0.3.26",
+          "released_at": "2026-09-24T00:38:37.164Z",
+          "download": {
+            "url": "https://dharmapoudel.github.io/bridgething-glass-overlay-source/r/01a0984d-3d32-7e4d-b3e3-74de735362cf/0.3.26.zip",
+            "size": 169976,
+            "sha256": "60303a3a22ec57100c3a882d92ae50255f4ba96988b82099a71c2c6c9e48729b"
+          },
+          "permissions": [],
+          "provides_overlay": true,
+          "min_libbridgething_version": "0.12.10",
+          "changelog": "- The weather location is no longer hardcoded: the overlay used to fall back\n  to a baked-in home coordinate when no location was set and the phone's\n  location was unavailable. It now uses the configured location (on-device\n  settings or companion app), the phone's location, or shows no weather.\n- New \"Weather refresh\" setting, in the on-device settings page and the\n  companion app: 5m / 15m / 30m / 1hr / 2hr tiles, same pattern as Idle\n  timeout (default 30m). The ambient dashboard re-arms its weather timer\n  whenever the setting changes.\n- Portrait ambient dashboard: slightly more left/right padding (24px to\n  32px). Landscape layout is unchanged."
+        },
         {
           "version": "0.3.25",
           "released_at": "2026-09-23T21:06:46.259Z",
