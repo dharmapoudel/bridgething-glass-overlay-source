@@ -1,7 +1,7 @@
 {
   "id": "01a0984d-3d32-7e4d-b3e3-74de735362cf",
   "name": "Glassy Overlay",
-  "version": "0.3.27",
+  "version": "0.3.29",
   "description": "A glassy system overlay: notifications, calls, pairing, volume and voice, plus an idle ambient dashboard with clock, weather and now playing, drawn over every app. Includes a launcher settings page for the ambient idle timeout.",
   "config": [
     {

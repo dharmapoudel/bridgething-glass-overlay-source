@@ -1056,10 +1056,165 @@ function AmbientScreen({ client }: { client: BridgethingClient }) {
   );
 }
 
+// Apps can hold the ambient screen off while the user is watching something
+// that needs no touch input (e.g. a Now Playing screen). The overlay bundle
+// is injected into the app's own document, so the app signals through a
+// sticky window flag plus a DOM event: the flag covers boot ordering (the
+// overlay may mount after the app already raised the signal), the event
+// covers changes afterwards.
+const AMBIENT_INHIBIT_EVENT = 'bridgething:ambient-inhibit';
+const AMBIENT_INHIBIT_FLAG = '__bridgethingAmbientInhibit';
+
+function readAmbientInhibit(): boolean {
+  try {
+    return (window as unknown as Record<string, unknown>)[AMBIENT_INHIBIT_FLAG] === true;
+  } catch {
+    return false;
+  }
+}
+
+function useAmbientInhibit(): boolean {
+  const [inhibited, setInhibited] = useState(() => readAmbientInhibit());
+  useEffect(() => {
+    const onInhibit = (e: Event) => {
+      const detail = (e as CustomEvent<{ inhibit?: unknown }>).detail;
+      setInhibited(detail?.inhibit === true);
+    };
+    window.addEventListener(AMBIENT_INHIBIT_EVENT, onInhibit);
+    // Re-read the sticky flag in case the app raised it before we mounted.
+    setInhibited(readAmbientInhibit());
+    return () => window.removeEventListener(AMBIENT_INHIBIT_EVENT, onInhibit);
+  }, []);
+  return inhibited;
+}
+
+// Universal inhibit #1: visible video playback. Any app — first- or
+// third-party, with zero Glassy-specific integration — playing a visible
+// <video> holds the ambient screen off. The DOM is shared across script
+// worlds, so media elements and their events are observable from the overlay
+// no matter which world the app's code runs in. (<audio> alone does NOT
+// inhibit: background music with the screen idle is exactly when ambient
+// should show.)
+function isVideoWatchable(v: HTMLVideoElement): boolean {
+  if (v.paused || v.ended || v.readyState < 2) return false;
+  try {
+    const r = v.getBoundingClientRect();
+    if (r.width <= 0 || r.height <= 0) return false;
+  } catch {
+    return false;
+  }
+  return true;
+}
+
+function useVideoPlayingInhibit(): boolean {
+  const [playing, setPlaying] = useState(false);
+  useEffect(() => {
+    const recompute = () => {
+      if (document.hidden) {
+        setPlaying(false);
+        return;
+      }
+      const vids = document.querySelectorAll('video');
+      for (let i = 0; i < vids.length; i++) {
+        if (isVideoWatchable(vids[i] as HTMLVideoElement)) {
+          setPlaying(true);
+          return;
+        }
+      }
+      setPlaying(false);
+    };
+    // Media events don't bubble, but capture-phase listeners on document
+    // see them from every <video> in the tree.
+    document.addEventListener('play', recompute, true);
+    document.addEventListener('pause', recompute, true);
+    document.addEventListener('ended', recompute, true);
+    document.addEventListener('emptied', recompute, true);
+    document.addEventListener('visibilitychange', recompute);
+    const mo = new MutationObserver(recompute);
+    if (document.documentElement) {
+      mo.observe(document.documentElement, { childList: true, subtree: true });
+    }
+    recompute();
+    return () => {
+      document.removeEventListener('play', recompute, true);
+      document.removeEventListener('pause', recompute, true);
+      document.removeEventListener('ended', recompute, true);
+      document.removeEventListener('emptied', recompute, true);
+      document.removeEventListener('visibilitychange', recompute);
+      mo.disconnect();
+    };
+  }, []);
+  return playing;
+}
+
+// Universal inhibit #2: Screen Wake Lock (best-effort).
+// navigator.wakeLock.request('screen') is the web-standard "keep the screen
+// on" signal, and well-built third-party media apps already use it. We wrap
+// request() in this world to count held screen locks and inhibit ambient
+// while any is held. Caveat: the overlay runs in its own script world, so
+// this only observes locks requested through wrappers visible from here —
+// same-world apps are covered; anything else falls back to the video
+// heuristic and the bridgething:ambient-inhibit event. Never throws.
+type WakeLockSentinelLike = {
+  addEventListener: (type: string, cb: () => void) => void;
+};
+type WakeLockLike = {
+  request: (type: string) => Promise<WakeLockSentinelLike>;
+};
+
+function useWakeLockInhibit(): boolean {
+  const [held, setHeld] = useState(false);
+  useEffect(() => {
+    let locks = 0;
+    let patched: ((type: string) => Promise<WakeLockSentinelLike>) | null = null;
+    let wl: WakeLockLike | null = null;
+    try {
+      const nav = navigator as unknown as { wakeLock?: WakeLockLike };
+      wl = nav?.wakeLock ?? null;
+      if (!wl || typeof wl.request !== 'function') return;
+      const origRequest = wl.request.bind(wl);
+      patched = async (type: string) => {
+        const sentinel = await origRequest(type);
+        if (type === 'screen') {
+          locks += 1;
+          setHeld(true);
+          try {
+            sentinel.addEventListener('release', () => {
+              locks = Math.max(0, locks - 1);
+              setHeld(locks > 0);
+            });
+          } catch {
+            /* ignore */
+          }
+        }
+        return sentinel;
+      };
+      wl.request = patched;
+    } catch {
+      return;
+    }
+    return () => {
+      try {
+        if (wl && patched && wl.request === patched) {
+          // Can't easily restore the original bound fn; release our count.
+          locks = 0;
+          setHeld(false);
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+  }, []);
+  return held;
+}
+
 function Ambient({ client }: { client: BridgethingClient }) {
   const idleMs = useAmbientIdleMs();
   const idle = useIdle(idleMs);
   const enabled = useAmbientEnabled();
+  const inhibited = useAmbientInhibit();
+  const wakeLocked = useWakeLockInhibit();
+  const videoPlaying = useVideoPlayingInhibit();
   const [blocked, setBlocked] = useState(false);
 
   useEffect(() => {
@@ -1072,7 +1227,7 @@ function Ambient({ client }: { client: BridgethingClient }) {
     return () => offs.forEach(off => off());
   }, [client]);
 
-  if (!enabled || !idle || blocked) return null;
+  if (!enabled || !idle || blocked || inhibited || wakeLocked || videoPlaying) return null;
   return <AmbientScreen client={client} />;
 }
 

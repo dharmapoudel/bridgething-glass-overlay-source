@@ -1,14 +1,38 @@
 # Glassy Overlay
 
-## 0.3.27
+## 0.3.29
 
 - Liquid glass overlays: notification toasts, the call and pairing cards, the
   volume bar, and the connection/voice pills are now much more translucent
   (~30% tint instead of ~80% black) with stronger backdrop blur and a light
   sheen over the top edge, so the ambient screensaver shows through. The
   fullscreen dim behind the call and pairing screens is lighter too. Ambient
-  dashboard and settings are unchanged.
+  dashboard, settings, and the ambient-inhibit signals are unchanged.
 
+
+## 0.3.28
+
+- Ambient screensaver now inhibits automatically for every app, with zero
+  app-side integration. Two new universal signals join the existing
+  `bridgething:ambient-inhibit` event/flag (kept as the explicit API):
+  (1) visible video playback — any playing, visibly-rendered <video>
+  holds ambient off (the DOM is shared across script worlds, so this is
+  observable from the overlay no matter where the app's code runs;
+  <audio> alone still does NOT inhibit); (2) Screen Wake Lock —
+  `navigator.wakeLock.request('screen')` is the web-standard "keep the
+  screen on" signal and well-built third-party media apps already use it;
+  the overlay counts held screen locks (best-effort: only locks requested
+  through wrappers visible from the overlay's script world are observed).
+
+## 0.3.27
+
+- New ambient-screensaver inhibit signal: apps can hold the ambient screen
+  off while the user is watching something that needs no touch input (e.g.
+  a Now Playing screen). The overlay is injected into the app's own
+  document, so the app signals through a `bridgething:ambient-inhibit` DOM
+  event plus a sticky `window.__bridgethingAmbientInhibit` flag (the flag
+  covers boot ordering). Finch 0.1.25+ raises it while its Now Playing
+  screen is up and clears it on unmount.
 
 ## 0.3.26
 
