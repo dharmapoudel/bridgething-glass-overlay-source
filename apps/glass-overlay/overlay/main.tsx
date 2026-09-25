@@ -1056,10 +1056,43 @@ function AmbientScreen({ client }: { client: BridgethingClient }) {
   );
 }
 
+// Apps can hold the ambient screen off while the user is watching something
+// that needs no touch input (e.g. a Now Playing screen). The overlay bundle
+// is injected into the app's own document, so the app signals through a
+// sticky window flag plus a DOM event: the flag covers boot ordering (the
+// overlay may mount after the app already raised the signal), the event
+// covers changes afterwards.
+const AMBIENT_INHIBIT_EVENT = 'bridgething:ambient-inhibit';
+const AMBIENT_INHIBIT_FLAG = '__bridgethingAmbientInhibit';
+
+function readAmbientInhibit(): boolean {
+  try {
+    return (window as unknown as Record<string, unknown>)[AMBIENT_INHIBIT_FLAG] === true;
+  } catch {
+    return false;
+  }
+}
+
+function useAmbientInhibit(): boolean {
+  const [inhibited, setInhibited] = useState(() => readAmbientInhibit());
+  useEffect(() => {
+    const onInhibit = (e: Event) => {
+      const detail = (e as CustomEvent<{ inhibit?: unknown }>).detail;
+      setInhibited(detail?.inhibit === true);
+    };
+    window.addEventListener(AMBIENT_INHIBIT_EVENT, onInhibit);
+    // Re-read the sticky flag in case the app raised it before we mounted.
+    setInhibited(readAmbientInhibit());
+    return () => window.removeEventListener(AMBIENT_INHIBIT_EVENT, onInhibit);
+  }, []);
+  return inhibited;
+}
+
 function Ambient({ client }: { client: BridgethingClient }) {
   const idleMs = useAmbientIdleMs();
   const idle = useIdle(idleMs);
   const enabled = useAmbientEnabled();
+  const inhibited = useAmbientInhibit();
   const [blocked, setBlocked] = useState(false);
 
   useEffect(() => {
@@ -1072,7 +1105,7 @@ function Ambient({ client }: { client: BridgethingClient }) {
     return () => offs.forEach(off => off());
   }, [client]);
 
-  if (!enabled || !idle || blocked) return null;
+  if (!enabled || !idle || blocked || inhibited) return null;
   return <AmbientScreen client={client} />;
 }
 

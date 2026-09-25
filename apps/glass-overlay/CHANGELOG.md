@@ -1,5 +1,15 @@
 # Glassy Overlay
 
+## 0.3.27
+
+- New ambient-screensaver inhibit signal: apps can hold the ambient screen
+  off while the user is watching something that needs no touch input (e.g.
+  a Now Playing screen). The overlay is injected into the app's own
+  document, so the app signals through a `bridgething:ambient-inhibit` DOM
+  event plus a sticky `window.__bridgethingAmbientInhibit` flag (the flag
+  covers boot ordering). Finch 0.1.25+ raises it while its Now Playing
+  screen is up and clears it on unmount.
+
 ## 0.3.26
 
 - The weather location is no longer hardcoded: the overlay used to fall back
