@@ -1,5 +1,19 @@
 # Glassy Overlay
 
+## 0.3.28
+
+- Ambient screensaver now inhibits automatically for every app, with zero
+  app-side integration. Two new universal signals join the existing
+  `bridgething:ambient-inhibit` event/flag (kept as the explicit API):
+  (1) visible video playback — any playing, visibly-rendered <video>
+  holds ambient off (the DOM is shared across script worlds, so this is
+  observable from the overlay no matter where the app's code runs;
+  <audio> alone still does NOT inhibit); (2) Screen Wake Lock —
+  `navigator.wakeLock.request('screen')` is the web-standard "keep the
+  screen on" signal and well-built third-party media apps already use it;
+  the overlay counts held screen locks (best-effort: only locks requested
+  through wrappers visible from the overlay's script world are observed).
+
 ## 0.3.27
 
 - New ambient-screensaver inhibit signal: apps can hold the ambient screen
