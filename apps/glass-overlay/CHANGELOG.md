@@ -1,5 +1,12 @@
 # Glassy Overlay
 
+## 0.3.32
+
+- Frostiness now actually applies: the overlay re-reads the frost level
+  from localStorage twice a second. The 0.3.31 synthetic storage event
+  does not cross the overlay's isolated JS world boundary, so the overlay
+  never heard it -- polling does not depend on events at all.
+
 ## 0.3.31
 
 - Frostiness (and every other settings-page change) now applies instantly:

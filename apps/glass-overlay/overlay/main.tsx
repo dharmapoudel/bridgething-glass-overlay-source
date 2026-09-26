@@ -530,7 +530,16 @@ function useGlassFrost(): number {
       setLevel(frostLevel());
     };
     window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
+    // Poll as a backstop: the storage event (real or synthetic) may not reach
+    // this isolated JS world, so re-read the value twice a second. setLevel
+    // with an unchanged value is a no-op and does not re-render.
+    const pollId = window.setInterval(() => {
+      setLevel(frostLevel());
+    }, 500);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.clearInterval(pollId);
+    };
   }, []);
   useEffect(() => {
     setLevel(frostLevel());
