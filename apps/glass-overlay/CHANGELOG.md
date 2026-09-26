@@ -1,5 +1,13 @@
 # Glassy Overlay
 
+## 0.3.33
+
+- Frostiness card now shows a live preview: a sample glass card over a
+  colorful background, rendered with the exact tint/blur of the selected
+  level. Tapping Clear/Light/Frosted/Extra updates the preview instantly,
+  so the difference is visible right on the settings page without needing
+  to trigger an overlay surface.
+
 ## 0.3.32
 
 - Frostiness now actually applies: the overlay re-reads the frost level

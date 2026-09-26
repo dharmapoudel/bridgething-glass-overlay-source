@@ -71,6 +71,13 @@ const FROST_OPTS: Array<[number, string]> = [
   [3, 'Extra'],
 ];
 const FROST_LABELS: Record<number, string> = { 0: 'Clear', 1: 'Light', 2: 'Frosted', 3: 'Extra' };
+// Mirrors FROST_MAP in overlay/main.tsx: [tint, blurCardPx, blurPillPx]
+const FROST_MAP: Array<[number, number, number]> = [
+  [0.12, 10, 8], // Clear
+  [0.2, 16, 14], // Light
+  [0.3, 26, 22], // Frosted
+  [0.45, 36, 30], // Extra
+];
 
 let companionLocation: string | null = null;
 let companionUnits: 'imperial' | 'metric' | null = null;
@@ -226,6 +233,20 @@ function refreshFrostHint(): void {
   }
 }
 
+const frostPreviewCard = document.getElementById('frost-preview-card') as HTMLDivElement;
+
+function renderFrostPreview(): void {
+  const cur = readFrost();
+  const [tint, blurCard] = FROST_MAP[cur];
+  // Same glass recipe as the overlay .glass-card: tinted translucent fill,
+  // backdrop blur + saturate, hairline border, specular top sheen.
+  frostPreviewCard.style.background = `rgba(20, 22, 28, ${tint})`;
+  frostPreviewCard.style.backdropFilter = `blur(${blurCard}px) saturate(1.8)`;
+  (frostPreviewCard.style as any).webkitBackdropFilter = `blur(${blurCard}px) saturate(1.8)`;
+  frostPreviewCard.style.border = '1px solid rgba(255, 255, 255, 0.28)';
+  frostPreviewCard.style.boxShadow = 'inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 8px 24px rgba(0, 0, 0, 0.25)';
+}
+
 function renderFrostTiles(): void {
   const cur = readFrost();
   frostTiles.textContent = '';
@@ -238,6 +259,7 @@ function renderFrostTiles(): void {
       lsSet(LS_FROST, String(val));
       lsSet(LS_FROST_SRC, 'device');
       renderFrostTiles();
+      renderFrostPreview();
       refreshFrostHint();
       flashSaved('Saved');
     });
@@ -245,12 +267,14 @@ function renderFrostTiles(): void {
   }
 }
 renderFrostTiles();
+renderFrostPreview();
 refreshFrostHint();
 
 (document.getElementById('reset-frost') as HTMLButtonElement).addEventListener('click', () => {
   lsDel(LS_FROST);
   lsDel(LS_FROST_SRC);
   renderFrostTiles();
+  renderFrostPreview();
   refreshFrostHint();
   flashSaved('Reset');
 });
@@ -381,6 +405,9 @@ export function applyCompanionDefaults(d: CompanionDefaults): void {
   if (companionFrost !== null && lsGet(LS_FROST_SRC) !== 'device') {
     lsSet(LS_FROST, String(companionFrost));
     lsSet(LS_FROST_SRC, 'companion');
+    renderFrostTiles();
+    renderFrostPreview();
+    refreshFrostHint();
   }
   if (!locTouched) locInput.value = lsGet(LS_LOC) || '';
   refreshLocHint();

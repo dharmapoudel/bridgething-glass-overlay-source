@@ -208,6 +208,49 @@ h1 {
   color: #2aa9e8;
 }
 
+.frost-preview {
+  position: relative;
+  margin-top: 16px;
+  border-radius: 18px;
+  overflow: hidden;
+  height: 120px;
+}
+
+.frost-preview-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 30%, #ff6b6b 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, #4ecdc4 0%, transparent 50%),
+    radial-gradient(circle at 60% 80%, #ffe66d 0%, transparent 50%),
+    radial-gradient(circle at 30% 70%, #a8e6cf 0%, transparent 50%),
+    #1a1a2e;
+}
+
+.frost-preview-card {
+  position: absolute;
+  inset: 20px;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 20px;
+  /* styled dynamically from JS to match the overlay glass */
+}
+
+.frost-preview-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.frost-preview-sub {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
 .slider-row {
   display: flex;
   align-items: center;
