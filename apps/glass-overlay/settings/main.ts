@@ -56,12 +56,26 @@ const REFRESH_OPTS: Array<[number, string]> = [
   [7200, '2hr'],
 ];
 
+const LS_FROST = 'glassy.glass_frost';
+const LS_FROST_SRC = 'glassy.glass_frost_src';
+const FROST_DEFAULT = 2;
+const FROST_MIN = 0;
+const FROST_MAX = 3;
+const FROST_OPTS: Array<[number, string]> = [
+  [0, 'Clear'],
+  [1, 'Light'],
+  [2, 'Frosted'],
+  [3, 'Extra'],
+];
+const FROST_LABELS: Record<number, string> = { 0: 'Clear', 1: 'Light', 2: 'Frosted', 3: 'Extra' };
+
 let companionLocation: string | null = null;
 let companionUnits: 'imperial' | 'metric' | null = null;
 let companionEnabled: boolean | null = null;
 let companionDim: number | null = null;
 let companionIdle: number | null = null;
 let companionRefresh: number | null = null;
+let companionFrost: number | null = null;
 
 function readSecs(): number {
   const raw = lsGet(LS_KEY);
@@ -184,6 +198,60 @@ refreshRefreshHint();
   flashSaved('Reset');
 });
 
+function clampFrost(n: number): number {
+  if (!Number.isFinite(n)) return FROST_DEFAULT;
+  return Math.min(FROST_MAX, Math.max(FROST_MIN, Math.round(n)));
+}
+function readFrost(): number {
+  const raw = lsGet(LS_FROST);
+  const n = raw == null ? NaN : Number(raw);
+  if (Number.isFinite(n)) return clampFrost(n);
+  return companionFrost ?? FROST_DEFAULT;
+}
+
+const frostTiles = document.getElementById('frost-tiles') as HTMLDivElement;
+const frostHint = document.getElementById('frosthint') as HTMLParagraphElement;
+
+function refreshFrostHint(): void {
+  if (companionFrost !== null) {
+    frostHint.textContent =
+      lsGet(LS_FROST_SRC) === 'device'
+        ? `Companion default is ${FROST_LABELS[companionFrost]}; this device overrides it.`
+        : `Using the companion app default (${FROST_LABELS[companionFrost]}).`;
+  } else {
+    frostHint.textContent = '';
+  }
+}
+
+function renderFrostTiles(): void {
+  const cur = readFrost();
+  frostTiles.textContent = '';
+  for (const [val, label] of FROST_OPTS) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'tile' + (val === cur ? ' active' : '');
+    b.textContent = label;
+    b.addEventListener('click', () => {
+      lsSet(LS_FROST, String(val));
+      lsSet(LS_FROST_SRC, 'device');
+      renderFrostTiles();
+      refreshFrostHint();
+      flashSaved('Saved');
+    });
+    frostTiles.appendChild(b);
+  }
+}
+renderFrostTiles();
+refreshFrostHint();
+
+(document.getElementById('reset-frost') as HTMLButtonElement).addEventListener('click', () => {
+  lsDel(LS_FROST);
+  lsDel(LS_FROST_SRC);
+  renderFrostTiles();
+  refreshFrostHint();
+  flashSaved('Reset');
+});
+
 export type CompanionDefaults = {
   location: string | null;
   units: 'imperial' | 'metric' | null;
@@ -191,6 +259,7 @@ export type CompanionDefaults = {
   dimLevel: number | null;
   idleTimeout: number | null;
   refresh: number | null;
+  frost: number | null;
 };
 
 declare global {
@@ -213,7 +282,7 @@ export async function fetchCompanionDefaults(wsUrl: string): Promise<CompanionDe
 }
 
 async function readCompanionEntries(client: BridgethingClient): Promise<CompanionDefaults> {
-  const out: CompanionDefaults = { location: null, units: null, enabled: null, dimLevel: null, idleTimeout: null, refresh: null };
+  const out: CompanionDefaults = { location: null, units: null, enabled: null, dimLevel: null, idleTimeout: null, refresh: null, frost: null };
   try {
     const get = async (key: string): Promise<string | null> => {
       try {
@@ -223,13 +292,14 @@ async function readCompanionEntries(client: BridgethingClient): Promise<Companio
         return null;
       }
     };
-    const [loc, units, enabled, dim, idle, refresh] = await Promise.all([
+    const [loc, units, enabled, dim, idle, refresh, frost] = await Promise.all([
       get('weather_location'),
       get('weather_units'),
       get('ambient_enabled'),
       get('ambient_dim_level'),
       get('ambient_idle_s'),
       get('weather_refresh_s'),
+      get('glass_frost'),
     ]);
     if (loc) out.location = loc;
     if (units === 'imperial' || units === 'metric') out.units = units;
@@ -241,6 +311,8 @@ async function readCompanionEntries(client: BridgethingClient): Promise<Companio
     if (Number.isFinite(idleNum)) out.idleTimeout = Math.min(MAX_S, Math.max(MIN_S, idleNum));
     const refreshNum = refresh == null ? NaN : Number(refresh);
     if (Number.isFinite(refreshNum)) out.refresh = Math.min(REFRESH_MAX_S, Math.max(REFRESH_MIN_S, Math.round(refreshNum)));
+    const frostNum = frost == null ? NaN : Number(frost);
+    if (Number.isFinite(frostNum)) out.frost = Math.min(FROST_MAX, Math.max(FROST_MIN, Math.round(frostNum)));
   } catch {
   }
   return out;
@@ -277,6 +349,7 @@ export function applyCompanionDefaults(d: CompanionDefaults): void {
   companionDim = d.dimLevel;
   companionIdle = d.idleTimeout;
   companionRefresh = d.refresh;
+  companionFrost = d.frost;
   if (companionLocation && lsGet(LS_LOC_SRC) !== 'device') {
     lsSet(LS_LOC, companionLocation);
     lsSet(LS_LOC_SRC, 'companion');
@@ -302,6 +375,10 @@ export function applyCompanionDefaults(d: CompanionDefaults): void {
     lsSet(LS_REFRESH, String(companionRefresh));
     lsSet(LS_REFRESH_SRC, 'companion');
   }
+  if (companionFrost !== null && lsGet(LS_FROST_SRC) !== 'device') {
+    lsSet(LS_FROST, String(companionFrost));
+    lsSet(LS_FROST_SRC, 'companion');
+  }
   if (!locTouched) locInput.value = lsGet(LS_LOC) || '';
   refreshLocHint();
   renderUnits();
@@ -312,6 +389,8 @@ export function applyCompanionDefaults(d: CompanionDefaults): void {
   refreshIdleHint();
   renderRefreshTiles();
   refreshRefreshHint();
+  renderFrostTiles();
+  refreshFrostHint();
   dimInput.value = String(readDim());
   dimVal.textContent = `${readDim()}%`;
   refreshDimHint();

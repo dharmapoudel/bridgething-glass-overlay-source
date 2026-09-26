@@ -1,5 +1,14 @@
 # Glassy Overlay
 
+## 0.3.30
+
+- New Frostiness setting: how frosted the liquid-glass overlay surfaces
+  (notifications, call, pairing, volume, voice) look. Four levels —
+  Clear, Light, Frosted (the 0.3.29 look), Extra — controlling tint
+  density and backdrop blur. Set per-device in the on-device settings
+  page or as the companion-app default via the new `glass_frost`
+  manifest config entry; the overlay picks up changes instantly.
+
 ## 0.3.29
 
 - Liquid glass overlays: notification toasts, the call and pairing cards, the

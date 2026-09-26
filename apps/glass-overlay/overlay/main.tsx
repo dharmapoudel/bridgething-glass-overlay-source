@@ -494,6 +494,50 @@ function useWeatherRefreshMs(): number {
   return ms;
 }
 
+const LS_GLASS_FROST = 'glassy.glass_frost';
+const FROST_DEFAULT = 2;
+const FROST_MIN = 0;
+const FROST_MAX = 3;
+
+// [tint alpha, card blur px, pill blur px] per frostiness level
+const FROST_MAP: Array<[number, number, number]> = [
+  [0.12, 10, 8], // Clear
+  [0.2, 16, 14], // Light
+  [0.3, 26, 22], // Frosted (the 0.3.29 look)
+  [0.45, 36, 30], // Extra
+];
+
+function clampFrost(n: number): number {
+  if (!Number.isFinite(n)) return FROST_DEFAULT;
+  return Math.min(FROST_MAX, Math.max(FROST_MIN, Math.round(n)));
+}
+
+function frostLevel(): number {
+  const rawLs = lsGet(LS_GLASS_FROST);
+  const nLs = rawLs == null ? NaN : Number(rawLs);
+  if (Number.isFinite(nLs)) return clampFrost(nLs);
+  const raw = companionCfg.glass_frost;
+  const n = raw == null ? NaN : Number(raw);
+  return clampFrost(n);
+}
+
+function useGlassFrost(): number {
+  useCompanionCfg();
+  const [level, setLevel] = useState(() => frostLevel());
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== null && e.key !== LS_GLASS_FROST) return;
+      setLevel(frostLevel());
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+  useEffect(() => {
+    setLevel(frostLevel());
+  }, [companionCfgVersion]);
+  return level;
+}
+
 function useIdle(timeoutMs: number): boolean {
   const [idle, setIdle] = useState(false);
   const timeoutRef = useRef(timeoutMs);
@@ -1254,10 +1298,18 @@ function Overlay({ cfg, client }: { cfg: OverlayConfig; client: BridgethingClien
     };
   };
 
+  const frost = useGlassFrost();
+  const [tint, blurCard, blurPill] = FROST_MAP[frost];
+  const glassVars = {
+    '--glass-tint': String(tint),
+    '--glass-blur-card': `${blurCard}px`,
+    '--glass-blur-pill': `${blurPill}px`,
+  } as Record<string, string>;
+
   return (
     <>
       <style>{css}</style>
-      <div className="absolute inset-0 font-sans">
+      <div className="absolute inset-0 font-sans" style={glassVars}>
         <Ambient client={client} />
         {cfg.surfaces.connection && <ConnectionBanner client={client} />}
         {cfg.surfaces.call && <CallCard client={client} onDismissible={dismissible} />}

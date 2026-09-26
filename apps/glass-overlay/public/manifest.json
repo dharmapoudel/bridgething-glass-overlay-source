@@ -1,7 +1,7 @@
 {
   "id": "01a0984d-3d32-7e4d-b3e3-74de735362cf",
   "name": "Glassy Overlay",
-  "version": "0.3.29",
+  "version": "0.3.30",
   "description": "A glassy system overlay: notifications, calls, pairing, volume and voice, plus an idle ambient dashboard with clock, weather and now playing, drawn over every app. Includes a launcher settings page for the ambient idle timeout.",
   "config": [
     {
@@ -62,6 +62,16 @@
         "description": "How often the ambient dashboard refreshes the weather, in seconds. Used as the default in the on-device settings page; a per-device override there wins.",
         "choices": ["300", "900", "1800", "3600", "7200"],
         "default": "1800"
+      }
+    },
+    {
+      "type": "enum",
+      "data": {
+        "key": "glass_frost",
+        "label": "Overlay frostiness",
+        "description": "How frosted the liquid-glass overlay surfaces (notifications, call, pairing, volume, voice) look: 0=Clear, 1=Light, 2=Frosted, 3=Extra. Used as the default in the on-device settings page; a per-device override there wins.",
+        "choices": ["0", "1", "2", "3"],
+        "default": "2"
       }
     }
   ],
