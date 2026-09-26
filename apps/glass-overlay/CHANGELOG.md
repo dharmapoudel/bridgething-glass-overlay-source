@@ -1,5 +1,12 @@
 # Glassy Overlay
 
+## 0.3.34
+
+- Frostiness levels are now clearly distinct: the gaps between steps were
+  too subtle. New map (tint / card blur / pill blur): Clear 0.10 / 8 / 6,
+  Light 0.22 / 16 / 14, Frosted 0.40 / 32 / 28, Extra 0.62 / 50 / 42.
+  Frosted and Extra are both substantially heavier than before.
+
 ## 0.3.33
 
 - Frostiness card now shows a live preview: a sample glass card over a

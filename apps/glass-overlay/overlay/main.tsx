@@ -501,10 +501,10 @@ const FROST_MAX = 3;
 
 // [tint alpha, card blur px, pill blur px] per frostiness level
 const FROST_MAP: Array<[number, number, number]> = [
-  [0.12, 10, 8], // Clear
-  [0.2, 16, 14], // Light
-  [0.3, 26, 22], // Frosted (the 0.3.29 look)
-  [0.45, 36, 30], // Extra
+  [0.1, 8, 6], // Clear
+  [0.22, 16, 14], // Light
+  [0.4, 32, 28], // Frosted
+  [0.62, 50, 42], // Extra
 ];
 
 function clampFrost(n: number): number {

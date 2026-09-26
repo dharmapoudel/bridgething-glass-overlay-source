@@ -71,12 +71,11 @@ const FROST_OPTS: Array<[number, string]> = [
   [3, 'Extra'],
 ];
 const FROST_LABELS: Record<number, string> = { 0: 'Clear', 1: 'Light', 2: 'Frosted', 3: 'Extra' };
-// Mirrors FROST_MAP in overlay/main.tsx: [tint, blurCardPx, blurPillPx]
 const FROST_MAP: Array<[number, number, number]> = [
-  [0.12, 10, 8], // Clear
-  [0.2, 16, 14], // Light
-  [0.3, 26, 22], // Frosted
-  [0.45, 36, 30], // Extra
+  [0.1, 8, 6], // Clear
+  [0.22, 16, 14], // Light
+  [0.4, 32, 28], // Frosted
+  [0.62, 50, 42], // Extra
 ];
 
 let companionLocation: string | null = null;
