@@ -21,6 +21,9 @@ function lsGet(k: string): string | null {
 function lsSet(k: string, v: string): void {
   try {
     localStorage.setItem(k, v);
+    // The overlay is injected into this very document, and the storage event
+    // never fires in the document that wrote the value — notify it manually.
+    window.dispatchEvent(new StorageEvent('storage', { key: k }));
   } catch {
   }
 }
@@ -586,3 +589,14 @@ dimInput.addEventListener('change', () => {
   refreshDimHint();
   flashSaved('Reset');
 });
+
+// The Car Thing knob arrives as horizontal wheel events; translate them into
+// vertical scroll so the knob scrolls the settings page.
+window.addEventListener('wheel', e => {
+  const ax = Math.abs(e.deltaX), ay = Math.abs(e.deltaY);
+  if (ax === 0 && ay === 0) return;
+  if (ax >= ay) {
+    e.preventDefault();
+    window.scrollBy(0, e.deltaX);
+  }
+}, { passive: false });

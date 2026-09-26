@@ -1,5 +1,17 @@
 # Glassy Overlay
 
+## 0.3.31
+
+- Frostiness (and every other settings-page change) now applies instantly:
+  the settings page dispatches a synthetic storage event after each write,
+  because the real storage event never fires in the document that wrote the
+  value — and the overlay runs inside that same document. Fixes "Frostiness
+  looks the same no matter which option I choose".
+- Frostiness moved to the top of the settings page, as the first card.
+- Knob now scrolls the settings page: knob rotation arrives as horizontal
+  wheel events, which are translated into vertical scroll. (The app never
+  had knob scrolling before — nothing regressed.)
+
 ## 0.3.30
 
 - New Frostiness setting: how frosted the liquid-glass overlay surfaces
