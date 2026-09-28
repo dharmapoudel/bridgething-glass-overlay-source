@@ -60,17 +60,15 @@ h1 {
 }
 
 /* liquid-glass options cards (Finch HUD recipe): 160° white gradient,
-   hairline border, backdrop blur + saturate, and a wobble-filtered specular
-   sheen (::after, referencing the #fx-glass-wobble defs injected by
-   settings/main.ts). Sharp corners kept to match the page's mono design. */
+   hairline border, and a wobble-filtered specular sheen (::after,
+   referencing the #fx-glass-wobble defs injected by settings/main.ts).
+   No blur, no tinted base — the glass effect is purely sheen/border.
+   Sharp corners kept to match the page's mono design. */
 .card {
   position: relative;
   overflow: hidden;
   background:
-    linear-gradient(160deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.03) 40%, rgba(255, 255, 255, 0.08)),
-    rgba(20, 22, 28, 0.55);
-  backdrop-filter: blur(22px) saturate(1.6);
-  -webkit-backdrop-filter: blur(22px) saturate(1.6);
+    linear-gradient(160deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.03) 40%, rgba(255, 255, 255, 0.08));
   border: 1px solid rgba(255, 255, 255, 0.14);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
   padding: 24px 24px 26px;
@@ -229,57 +227,6 @@ h1 {
   color: #2aa9e8;
 }
 
-.frost-preview {
-  position: relative;
-  margin-top: 16px;
-  border-radius: 18px;
-  overflow: hidden;
-  height: 120px;
-}
-
-.frost-preview-bg {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at 20% 30%, #ff6b6b 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, #4ecdc4 0%, transparent 50%),
-    radial-gradient(circle at 60% 80%, #ffe66d 0%, transparent 50%),
-    radial-gradient(circle at 30% 70%, #a8e6cf 0%, transparent 50%),
-    #1a1a2e;
-}
-
-.frost-preview-card {
-  position: absolute;
-  inset: 20px;
-  border-radius: 14px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 0 20px;
-  /* styled dynamically from JS to match the overlay glass */
-}
-
-.frost-preview-card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.14) 45%, transparent 60%);
-  filter: url(#fx-glass-wobble);
-}
-
-.frost-preview-title {
-  margin: 0;
-  font-size: 17px;
-  font-weight: 600;
-  color: #fff;
-}
-
-.frost-preview-sub {
-  margin: 4px 0 0;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.7);
-}
 
 .slider-row {
   display: flex;

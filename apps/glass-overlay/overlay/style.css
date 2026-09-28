@@ -15,22 +15,18 @@
    @property var that stays unset in the shadow root, rendering no border) */
 .forecast-box { border: 1px solid rgb(255 255 255 / 0.12); }
 
-/* liquid glass: Finch HUD recipe — 160° white gradient over the frostiness
-   tint, hairline border, blur + saturate (per Frostiness setting).
-   The specular sheen (::after) is warped by the #fx-glass-wobble SVG filter
-   injected into the shadow root at boot.
-   Tint/blur come from CSS custom properties set on the overlay root
+/* liquid glass: Finch HUD recipe — 160° white gradient, hairline border,
+   and specular sheen (::after) warped by the #fx-glass-wobble SVG filter
+   injected into the shadow root at boot. No blur, no tinted base.
+   Intensity comes from CSS custom properties set on the overlay root
    container by the frostiness setting; the fallbacks below are the
    Frosted (2) look. Plain var() only — never @property (see note above). */
 .glass-card {
   position: relative;
   overflow: hidden;
   background:
-    linear-gradient(160deg, rgb(255 255 255 / 0.10), rgb(255 255 255 / 0.03) 40%, rgb(255 255 255 / 0.08)),
-    rgb(18 20 26 / var(--glass-tint, 0.30));
-  backdrop-filter: blur(var(--glass-blur-card, 26px)) saturate(1.6);
-  -webkit-backdrop-filter: blur(var(--glass-blur-card, 26px)) saturate(1.6);
-  border: 1px solid rgb(255 255 255 / 0.14);
+    linear-gradient(160deg, rgb(255 255 255 / var(--glass-sheen, 0.10)), rgb(255 255 255 / calc(var(--glass-sheen, 0.10) * 0.3)) 40%, rgb(255 255 255 / calc(var(--glass-sheen, 0.10) * 0.8)));
+  border: 1px solid rgb(255 255 255 / var(--glass-border, 0.14));
   box-shadow: 0 12px 40px rgb(0 0 0 / 0.35);
   text-shadow: 0 1px 10px rgb(0 0 0 / 0.55);
 }
@@ -39,11 +35,8 @@
   position: relative;
   overflow: hidden;
   background:
-    linear-gradient(160deg, rgb(255 255 255 / 0.10), rgb(255 255 255 / 0.03) 40%, rgb(255 255 255 / 0.08)),
-    rgb(18 20 26 / var(--glass-tint, 0.30));
-  backdrop-filter: blur(var(--glass-blur-pill, 22px)) saturate(1.6);
-  -webkit-backdrop-filter: blur(var(--glass-blur-pill, 22px)) saturate(1.6);
-  border: 1px solid rgb(255 255 255 / 0.14);
+    linear-gradient(160deg, rgb(255 255 255 / var(--glass-sheen, 0.10)), rgb(255 255 255 / calc(var(--glass-sheen, 0.10) * 0.3)) 40%, rgb(255 255 255 / calc(var(--glass-sheen, 0.10) * 0.8)));
+  border: 1px solid rgb(255 255 255 / var(--glass-border, 0.14));
   box-shadow: 0 8px 28px rgb(0 0 0 / 0.32);
   text-shadow: 0 1px 8px rgb(0 0 0 / 0.55);
 }
@@ -56,7 +49,7 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(115deg, transparent 30%, rgb(255 255 255 / 0.14) 45%, transparent 60%);
+  background: linear-gradient(115deg, transparent 30%, rgb(255 255 255 / var(--glass-highlight, 0.14)) 45%, transparent 60%);
   filter: url(#fx-glass-wobble);
 }
 

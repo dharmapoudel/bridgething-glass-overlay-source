@@ -1,5 +1,12 @@
 # Glassy Overlay
 
+## 0.3.36
+
+- Frostiness no longer uses tint or blur. The 4 levels (Clear/Light/Frosted/
+  Extra) now control glass-effect intensity: the 160° specular gradient, the
+  hairline border, and the wobble-filtered ::after highlight. Removed the
+  settings-page live preview.
+
 ## 0.3.35
 
 - Frosted liquid-glass treatment (Finch HUD recipe) on all overlay panels

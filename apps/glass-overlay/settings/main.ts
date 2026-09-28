@@ -39,9 +39,9 @@ const MAX_S = 3600;
 
 /* Liquid-glass specular filter (Finch HUD recipe), injected once per
    document: feTurbulence-warped displacement that gives the sheen its
-   liquid wobble. The .card::after and .frost-preview-card::after layers
-   reference it via filter:url(#fx-glass-wobble). If injection fails the
-   cards still render, just without the wobble. */
+   liquid wobble. The .card::after layer references it via
+   filter:url(#fx-glass-wobble). If injection fails the cards still
+   render, just without the wobble. */
 (function ensureGlassDefs(): void {
   try {
     if (document.getElementById('fx-glass-wobble')) return;
@@ -97,12 +97,6 @@ const FROST_OPTS: Array<[number, string]> = [
   [3, 'Extra'],
 ];
 const FROST_LABELS: Record<number, string> = { 0: 'Clear', 1: 'Light', 2: 'Frosted', 3: 'Extra' };
-const FROST_MAP: Array<[number, number, number]> = [
-  [0.1, 8, 6], // Clear
-  [0.22, 16, 14], // Light
-  [0.4, 32, 28], // Frosted
-  [0.62, 50, 42], // Extra
-];
 
 let companionLocation: string | null = null;
 let companionUnits: 'imperial' | 'metric' | null = null;
@@ -258,23 +252,6 @@ function refreshFrostHint(): void {
   }
 }
 
-const frostPreviewCard = document.getElementById('frost-preview-card') as HTMLDivElement;
-
-function renderFrostPreview(): void {
-  const cur = readFrost();
-  const [tint, blurCard] = FROST_MAP[cur];
-  // Same glass recipe as the overlay .glass-card (Finch HUD treatment):
-  // 160° white gradient over the tinted fill, hairline border, backdrop
-  // blur + saturate, drop shadow. The specular sheen comes from the
-  // .frost-preview-card::after layer (wobble filter).
-  frostPreviewCard.style.background =
-    `linear-gradient(160deg, rgba(255,255,255,.10), rgba(255,255,255,.03) 40%, rgba(255,255,255,.08)), rgba(20, 22, 28, ${tint})`;
-  frostPreviewCard.style.backdropFilter = `blur(${blurCard}px) saturate(1.6)`;
-  (frostPreviewCard.style as any).webkitBackdropFilter = `blur(${blurCard}px) saturate(1.6)`;
-  frostPreviewCard.style.border = '1px solid rgba(255, 255, 255, 0.14)';
-  frostPreviewCard.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.35)';
-}
-
 function renderFrostTiles(): void {
   const cur = readFrost();
   frostTiles.textContent = '';
@@ -287,23 +264,20 @@ function renderFrostTiles(): void {
       lsSet(LS_FROST, String(val));
       lsSet(LS_FROST_SRC, 'device');
       renderFrostTiles();
-      renderFrostPreview();
-      refreshFrostHint();
+            refreshFrostHint();
       flashSaved('Saved');
     });
     frostTiles.appendChild(b);
   }
 }
 renderFrostTiles();
-renderFrostPreview();
 refreshFrostHint();
 
 (document.getElementById('reset-frost') as HTMLButtonElement).addEventListener('click', () => {
   lsDel(LS_FROST);
   lsDel(LS_FROST_SRC);
   renderFrostTiles();
-  renderFrostPreview();
-  refreshFrostHint();
+    refreshFrostHint();
   flashSaved('Reset');
 });
 
@@ -434,8 +408,7 @@ export function applyCompanionDefaults(d: CompanionDefaults): void {
     lsSet(LS_FROST, String(companionFrost));
     lsSet(LS_FROST_SRC, 'companion');
     renderFrostTiles();
-    renderFrostPreview();
-    refreshFrostHint();
+        refreshFrostHint();
   }
   if (!locTouched) locInput.value = lsGet(LS_LOC) || '';
   refreshLocHint();

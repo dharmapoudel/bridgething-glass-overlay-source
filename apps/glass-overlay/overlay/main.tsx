@@ -500,11 +500,14 @@ const FROST_MIN = 0;
 const FROST_MAX = 3;
 
 // [tint alpha, card blur px, pill blur px] per frostiness level
+// Frostiness controls glass-effect intensity (no blur, no tint):
+// [sheen, border, highlight] — the 160° gradient opacity, the hairline
+// border opacity, and the ::after specular highlight opacity.
 const FROST_MAP: Array<[number, number, number]> = [
-  [0.1, 8, 6], // Clear
-  [0.22, 16, 14], // Light
-  [0.4, 32, 28], // Frosted
-  [0.62, 50, 42], // Extra
+  [0.03, 0.06, 0.05], // Clear — barely-there glass
+  [0.06, 0.10, 0.09], // Light — subtle glass
+  [0.10, 0.14, 0.14], // Frosted — medium glass
+  [0.16, 0.22, 0.22], // Extra — strong glass
 ];
 
 function clampFrost(n: number): number {
@@ -1308,11 +1311,11 @@ function Overlay({ cfg, client }: { cfg: OverlayConfig; client: BridgethingClien
   };
 
   const frost = useGlassFrost();
-  const [tint, blurCard, blurPill] = FROST_MAP[frost];
+  const [sheen, border, highlight] = FROST_MAP[frost];
   const glassVars = {
-    '--glass-tint': String(tint),
-    '--glass-blur-card': `${blurCard}px`,
-    '--glass-blur-pill': `${blurPill}px`,
+    '--glass-sheen': String(sheen),
+    '--glass-border': String(border),
+    '--glass-highlight': String(highlight),
   } as Record<string, string>;
 
   return (
