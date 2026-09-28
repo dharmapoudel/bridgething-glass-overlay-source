@@ -1,5 +1,14 @@
 # Glassy Overlay
 
+## 0.3.35
+
+- Frosted liquid-glass treatment (Finch HUD recipe) on all overlay panels
+  and the settings options cards: 160° white gradient over the tint,
+  hairline border, blur + saturate, and a wobble-filtered specular sheen
+  (SVG turbulence/displacement) layered over every glass surface. The
+  Frostiness levels (Clear/Light/Frosted/Extra) still drive tint and blur;
+  the settings frost preview renders the exact new recipe.
+
 ## 0.3.34
 
 - Frostiness levels are now clearly distinct: the gaps between steps were

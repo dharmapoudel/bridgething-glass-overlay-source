@@ -37,6 +37,32 @@ const DEFAULT_S = 30;
 const MIN_S = 15;
 const MAX_S = 3600;
 
+/* Liquid-glass specular filter (Finch HUD recipe), injected once per
+   document: feTurbulence-warped displacement that gives the sheen its
+   liquid wobble. The .card::after and .frost-preview-card::after layers
+   reference it via filter:url(#fx-glass-wobble). If injection fails the
+   cards still render, just without the wobble. */
+(function ensureGlassDefs(): void {
+  try {
+    if (document.getElementById('fx-glass-wobble')) return;
+    const host = document.createElement('div');
+    host.setAttribute('aria-hidden', 'true');
+    host.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;pointer-events:none;';
+    host.innerHTML =
+      '<svg width="0" height="0" aria-hidden="true" style="position:absolute">' +
+      '<defs>' +
+      '<filter id="fx-glass-wobble">' +
+      '<feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="2" result="n"></feTurbulence>' +
+      '<feDisplacementMap in="SourceGraphic" in2="n" scale="18"></feDisplacementMap>' +
+      '</filter>' +
+      '</defs>' +
+      '</svg>';
+    document.body.appendChild(host);
+  } catch {
+    /* ignored */
+  }
+})();
+
 const IDLE_OPTS: Array<[number, string]> = [
   [15, '15s'],
   [30, '30s'],
@@ -237,13 +263,16 @@ const frostPreviewCard = document.getElementById('frost-preview-card') as HTMLDi
 function renderFrostPreview(): void {
   const cur = readFrost();
   const [tint, blurCard] = FROST_MAP[cur];
-  // Same glass recipe as the overlay .glass-card: tinted translucent fill,
-  // backdrop blur + saturate, hairline border, specular top sheen.
-  frostPreviewCard.style.background = `rgba(20, 22, 28, ${tint})`;
-  frostPreviewCard.style.backdropFilter = `blur(${blurCard}px) saturate(1.8)`;
-  (frostPreviewCard.style as any).webkitBackdropFilter = `blur(${blurCard}px) saturate(1.8)`;
-  frostPreviewCard.style.border = '1px solid rgba(255, 255, 255, 0.28)';
-  frostPreviewCard.style.boxShadow = 'inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 8px 24px rgba(0, 0, 0, 0.25)';
+  // Same glass recipe as the overlay .glass-card (Finch HUD treatment):
+  // 160° white gradient over the tinted fill, hairline border, backdrop
+  // blur + saturate, drop shadow. The specular sheen comes from the
+  // .frost-preview-card::after layer (wobble filter).
+  frostPreviewCard.style.background =
+    `linear-gradient(160deg, rgba(255,255,255,.10), rgba(255,255,255,.03) 40%, rgba(255,255,255,.08)), rgba(20, 22, 28, ${tint})`;
+  frostPreviewCard.style.backdropFilter = `blur(${blurCard}px) saturate(1.6)`;
+  (frostPreviewCard.style as any).webkitBackdropFilter = `blur(${blurCard}px) saturate(1.6)`;
+  frostPreviewCard.style.border = '1px solid rgba(255, 255, 255, 0.14)';
+  frostPreviewCard.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.35)';
 }
 
 function renderFrostTiles(): void {

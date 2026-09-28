@@ -59,10 +59,31 @@ h1 {
   white-space: nowrap;
 }
 
+/* liquid-glass options cards (Finch HUD recipe): 160° white gradient,
+   hairline border, backdrop blur + saturate, and a wobble-filtered specular
+   sheen (::after, referencing the #fx-glass-wobble defs injected by
+   settings/main.ts). Sharp corners kept to match the page's mono design. */
 .card {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.03) 40%, rgba(255, 255, 255, 0.08)),
+    rgba(20, 22, 28, 0.55);
+  backdrop-filter: blur(22px) saturate(1.6);
+  -webkit-backdrop-filter: blur(22px) saturate(1.6);
   border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
   padding: 24px 24px 26px;
   margin: 0 0 22px;
+}
+
+.card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.14) 45%, transparent 60%);
+  filter: url(#fx-glass-wobble);
 }
 
 .card-head {
@@ -236,6 +257,15 @@ h1 {
   justify-content: center;
   padding: 0 20px;
   /* styled dynamically from JS to match the overlay glass */
+}
+
+.frost-preview-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.14) 45%, transparent 60%);
+  filter: url(#fx-glass-wobble);
 }
 
 .frost-preview-title {

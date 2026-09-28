@@ -1342,6 +1342,7 @@ function boot() {
     host.style.cssText = 'position:fixed;inset:0;z-index:2147483647;pointer-events:none';
     const shadow = host.attachShadow({ mode: 'closed' });
     document.body.appendChild(host);
+    ensureGlassDefs(shadow);
     const client = new BridgethingClient({ url: cfg.url ?? `ws://${location.host}/` });
     if (cfg.url) syncCompanionCfg(client);
     render(<Overlay cfg={cfg} client={client} />, shadow);
@@ -1349,6 +1350,39 @@ function boot() {
 
   if (document.body) mount();
   else document.addEventListener('DOMContentLoaded', mount, { once: true });
+}
+
+/* Liquid-glass specular filter (Finch HUD recipe), injected once per shadow
+   root: feTurbulence-warped displacement that gives the sheen its liquid
+   wobble. The .glass-card/.glass-pill ::after layers reference it via
+   filter:url(#fx-glass-wobble). If injection fails the panels still render,
+   just without the wobble. */
+let glassDefsInjected = false;
+
+function ensureGlassDefs(root: ShadowRoot): void {
+  if (glassDefsInjected) return;
+  if (root.getElementById('fx-glass-wobble')) {
+    glassDefsInjected = true;
+    return;
+  }
+  try {
+    const host = document.createElement('div');
+    host.setAttribute('aria-hidden', 'true');
+    host.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;pointer-events:none;';
+    host.innerHTML =
+      '<svg width="0" height="0" aria-hidden="true" style="position:absolute">' +
+      '<defs>' +
+      '<filter id="fx-glass-wobble">' +
+      '<feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="2" result="n"></feTurbulence>' +
+      '<feDisplacementMap in="SourceGraphic" in2="n" scale="18"></feDisplacementMap>' +
+      '</filter>' +
+      '</defs>' +
+      '</svg>';
+    root.appendChild(host);
+    glassDefsInjected = true;
+  } catch {
+    /* ignored — the panels still render without the wobble filter */
+  }
 }
 
 boot();
