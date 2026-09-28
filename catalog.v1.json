@@ -1,7 +1,7 @@
 {
   "$schema": "https://apps.bridgething.com/schemas/catalog/v1.json",
   "schema": "catalog.v1",
-  "updated_at": "2026-09-24T00:38:37.217Z",
+  "updated_at": "2026-09-28T03:30:00.830Z",
   "repo": {
     "name": "Glassy Overlay",
     "description": "A replacement system overlay for the Spotify Car Thing.",
@@ -12,7 +12,7 @@
     {
       "id": "01a0984d-3d32-7e4d-b3e3-74de735362cf",
       "name": "Glassy Overlay",
-      "description": "A glassy system overlay: notifications, calls, pairing, volume and voice, plus an idle ambient dashboard with clock, weather and now playing, drawn over every app. Includes a launcher settings page for the ambient idle timeout.",
+      "description": "A glassy system overlay: notifications, calls, pairing, volume and voice, plus an idle ambient dashboard with clock, weather and now playing. Settings cover the ambient screensaver, weather, and the Frostiness of the glass surfaces.",
       "author": "Dharma Poudel",
       "icon": "https://dharmapoudel.github.io/bridgething-glass-overlay-source/icons/01a0984d-3d32-7e4d-b3e3-74de735362cf.png",
       "screenshots": [
@@ -25,6 +25,19 @@
       "homepage": "https://github.com/dharmapoudel/bridgething-glass-overlay",
       "source": "https://github.com/dharmapoudel/bridgething-glass-overlay",
       "versions": [
+        {
+          "version": "0.3.38",
+          "released_at": "2026-09-28T03:30:00.777Z",
+          "download": {
+            "url": "https://dharmapoudel.github.io/bridgething-glass-overlay-source/r/01a0984d-3d32-7e4d-b3e3-74de735362cf/0.3.38.zip",
+            "size": 172373,
+            "sha256": "7571ef8f007bee5f719d9f276953db9f394ca0d8b33e9ca2fb0a857a5c88d70d"
+          },
+          "permissions": [],
+          "provides_overlay": true,
+          "min_libbridgething_version": "0.12.10",
+          "changelog": "- Updated store metadata (full settings description) and refreshed all five\n  store screenshots with the current liquid-glass look."
+        },
         {
           "version": "0.3.26",
           "released_at": "2026-09-24T00:38:37.164Z",
