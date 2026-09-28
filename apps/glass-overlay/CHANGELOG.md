@@ -1,5 +1,10 @@
 # Glassy Overlay
 
+## 0.3.38
+
+- Updated store metadata (full settings description) and refreshed all five
+  store screenshots with the current liquid-glass look.
+
 ## 0.3.37
 
 - Transparency now decreases as frostiness goes up (matching Finch's volume
