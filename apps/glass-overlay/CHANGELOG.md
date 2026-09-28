@@ -1,5 +1,12 @@
 # Glassy Overlay
 
+## 0.3.37
+
+- Transparency now decreases as frostiness goes up (matching Finch's volume
+  HUD): the fill opacity scales with the level — Clear 0.05, Light 0.15,
+  Frosted 0.30, Extra 0.50 — alongside the sheen/border/highlight intensity.
+  Still no backdrop blur.
+
 ## 0.3.36
 
 - Frostiness no longer uses tint or blur. The 4 levels (Clear/Light/Frosted/
