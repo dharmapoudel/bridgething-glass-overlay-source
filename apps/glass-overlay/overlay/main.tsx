@@ -499,16 +499,15 @@ const FROST_DEFAULT = 2;
 const FROST_MIN = 0;
 const FROST_MAX = 3;
 
-// [tint alpha, card blur px, pill blur px] per frostiness level
-// Frostiness: transparency decreases as the level goes up (like Finch's
-// volume HUD) — the fill gets more solid. No backdrop blur.
-// [fill, sheen, border, highlight] — fill opacity, 160° gradient opacity,
-// hairline border opacity, ::after specular highlight opacity.
-const FROST_MAP: Array<[number, number, number, number]> = [
-  [0.05, 0.03, 0.06, 0.05], // Clear — almost fully transparent
-  [0.15, 0.06, 0.10, 0.09], // Light — slightly solid
-  [0.30, 0.10, 0.14, 0.14], // Frosted — medium fill
-  [0.50, 0.16, 0.22, 0.22], // Extra — quite solid
+// Frostiness: real frosted glass — backdrop blur does the work, and the
+// blurred background itself determines the color (no white tint wash).
+// A slight brightness lift keeps it airy. Higher levels = more blur.
+// [blurPx, brightness, sheen, border, highlight]
+const FROST_MAP: Array<[number, number, number, number, number]> = [
+  [0, 1.0, 0.03, 0.06, 0.05],  // Clear — no blur, barely there
+  [8, 1.05, 0.06, 0.10, 0.09], // Light — slight blur
+  [20, 1.08, 0.10, 0.14, 0.14],// Frosted — the reference look
+  [32, 1.12, 0.16, 0.22, 0.22],// Extra — heavy frost
 ];
 
 function clampFrost(n: number): number {
@@ -1312,9 +1311,10 @@ function Overlay({ cfg, client }: { cfg: OverlayConfig; client: BridgethingClien
   };
 
   const frost = useGlassFrost();
-  const [fill, sheen, border, highlight] = FROST_MAP[frost];
+  const [blur, bright, sheen, border, highlight] = FROST_MAP[frost];
   const glassVars = {
-    '--glass-fill': String(fill),
+    '--glass-blur': `${blur}px`,
+    '--glass-bright': String(bright),
     '--glass-sheen': String(sheen),
     '--glass-border': String(border),
     '--glass-highlight': String(highlight),
