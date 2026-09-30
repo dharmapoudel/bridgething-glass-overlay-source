@@ -1,7 +1,7 @@
 {
   "$schema": "https://apps.bridgething.com/schemas/catalog/v1.json",
   "schema": "catalog.v1",
-  "updated_at": "2026-09-28T03:30:00.830Z",
+  "updated_at": "2026-09-30T02:29:08.505Z",
   "repo": {
     "name": "Glassy Overlay",
     "description": "A replacement system overlay for the Spotify Car Thing.",
@@ -25,6 +25,19 @@
       "homepage": "https://github.com/dharmapoudel/bridgething-glass-overlay",
       "source": "https://github.com/dharmapoudel/bridgething-glass-overlay",
       "versions": [
+        {
+          "version": "0.3.40",
+          "released_at": "2026-09-30T02:29:08.431Z",
+          "download": {
+            "url": "https://dharmapoudel.github.io/bridgething-glass-overlay-source/r/01a0984d-3d32-7e4d-b3e3-74de735362cf/0.3.40.zip",
+            "size": 172387,
+            "sha256": "4b7082befce13bd0617fc7b2856c8c104b8206fd989cf321c902a4c35a56f8b5"
+          },
+          "permissions": [],
+          "provides_overlay": true,
+          "min_libbridgething_version": "0.12.10",
+          "changelog": "- Removed the white tint wash: the blurred background now determines the\n  glass color (dark backgrounds stay dark, bright ones stay bright), with\n  only a slight brightness lift to keep it airy. The four levels scale\n  blur (0/8/20/32px) plus sheen/border/highlight intensity."
+        },
         {
           "version": "0.3.38",
           "released_at": "2026-09-28T03:30:00.777Z",
