@@ -1,5 +1,19 @@
 # Glassy Overlay
 
+## 0.3.40
+
+- Removed the white tint wash: the blurred background now determines the
+  glass color (dark backgrounds stay dark, bright ones stay bright), with
+  only a slight brightness lift to keep it airy. The four levels scale
+  blur (0/8/20/32px) plus sheen/border/highlight intensity.
+
+## 0.3.39
+
+- Frosted glass redone from reference: backdrop blur is back, paired with a
+  light, airy white tint (not the dark fill). The four levels now scale blur
+  + tint together — Clear (0px), Light (8px), Frosted (20px), Extra (32px) —
+  alongside the sheen/border/highlight intensity.
+
 ## 0.3.38
 
 - Updated store metadata (full settings description) and refreshed all five
