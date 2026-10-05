@@ -1,5 +1,10 @@
 # Glassy Overlay
 
+## 0.3.41
+
+- Maintenance release: the 0.3.38–0.3.40 fix history was consolidated into
+  single commits on main. No functional changes in this release.
+
 ## 0.3.40
 
 - Removed the white tint wash: the blurred background now determines the
